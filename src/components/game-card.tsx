@@ -440,7 +440,9 @@ export const GameCard = memo(
                   {wipeData?.announcement && (
                     <div className="mt-4 p-3 bg-yellow-500/5 border border-yellow-500/20 rounded-lg">
                       <div className="flex items-start gap-2">
-                        <span className="text-yellow-500 text-sm">⚠️</span>
+                        <span className="text-yellow-500 text-sm">
+                          <AlertTriangle />
+                        </span>
                         <div className="flex-1">
                           <p className="text-xs text-yellow-500/90 font-medium mb-1">
                             Estimated Date Info

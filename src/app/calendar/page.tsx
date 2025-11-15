@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { EventCalendar } from "@/components/event-calendar";
 import type { GameEvent } from "@/lib/events/types";
+import { CalendarCheck } from "lucide-react";
 
 export default function CalendarPage() {
   const [events, setEvents] = useState<GameEvent[]>([]);
@@ -14,7 +15,6 @@ export default function CalendarPage() {
       try {
         setLoading(true);
 
-        // Fetch data from all game APIs
         const games = [
           "rust",
           "tarkov",
@@ -101,7 +101,7 @@ export default function CalendarPage() {
                 gameId,
                 gameName,
                 title,
-                type: eventType as any,
+                type: eventType,
                 startDate: nextWipeDate,
                 confirmed: data.confirmed || false,
                 description: data.announcement || data.frequency,
@@ -126,7 +126,6 @@ export default function CalendarPage() {
 
   return (
     <div className="relative min-h-screen font-sans bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
-      {/* Header */}
       <header className="relative border-b border-white/10 bg-black/30 backdrop-blur-md">
         <div className="mx-auto max-w-7xl px-6 py-6">
           <div className="flex items-center justify-between">
@@ -151,7 +150,6 @@ export default function CalendarPage() {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="relative mx-auto max-w-7xl px-6 py-12">
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-zinc-50 mb-2">
@@ -170,7 +168,6 @@ export default function CalendarPage() {
           </div>
         ) : (
           <>
-            {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
               <div className="rounded-lg border border-zinc-700/50 bg-zinc-800/30 backdrop-blur-sm p-6">
                 <div className="text-3xl font-bold text-zinc-50">
@@ -196,10 +193,8 @@ export default function CalendarPage() {
               </div>
             </div>
 
-            {/* Calendar */}
             <EventCalendar events={events} />
 
-            {/* Event List Below Calendar */}
             <div className="mt-12">
               <h2 className="text-2xl font-bold text-zinc-50 mb-6">
                 All Upcoming Events
@@ -231,8 +226,8 @@ export default function CalendarPage() {
                               {event.gameName}
                             </span>
                             {event.confirmed && (
-                              <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full font-medium">
-                                ✓ Confirmed
+                              <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 font-medium">
+                                <CalendarCheck />
                               </span>
                             )}
                             {!event.confirmed && (
@@ -279,7 +274,6 @@ export default function CalendarPage() {
         )}
       </main>
 
-      {/* Footer */}
       <footer className="relative border-t border-white/10 py-8 mt-12">
         <div className="mx-auto max-w-7xl px-6 text-center text-sm text-zinc-400">
           Track wipe schedules and events for your favorite games

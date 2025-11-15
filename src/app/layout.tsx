@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "NextWipeTime - Track Game Wipe Schedules",
+  title: "Next Wipe Time - Track Game Wipe Schedules",
   description:
     "Track wipe schedules and countdowns for Rust, Tarkov, Path of Exile, and Fortnite",
 };

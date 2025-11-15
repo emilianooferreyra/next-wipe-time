@@ -197,7 +197,6 @@ export function GameTabs({ onGameChange }: GameTabsProps) {
                   : "text-zinc-400 hover:bg-zinc-800/40 hover:text-zinc-300"
               }`}
             >
-              {/* Game thumbnail */}
               <div
                 className={`w-8 h-8 rounded overflow-hidden transition-all duration-200 ${
                   isSelected ? "ring-2 ring-offset-2 ring-offset-zinc-900" : ""
@@ -223,7 +222,6 @@ export function GameTabs({ onGameChange }: GameTabsProps) {
 
               {game.name}
 
-              {/* Accent indicator */}
               {isSelected && (
                 <div
                   className="absolute bottom-0 left-0 right-0 h-[2px] rounded-full"

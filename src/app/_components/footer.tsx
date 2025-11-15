@@ -5,9 +5,7 @@ export function Footer() {
     <footer className="relative border-t border-white/5 py-12 mt-16">
       <div className="mx-auto max-w-7xl px-6">
         <div className="text-center mb-6">
-          <h2 className="text-xl font-bold text-zinc-300 mb-2">
-            NextWipeTime
-          </h2>
+          <h2 className="text-xl font-bold text-zinc-300 mb-2">NextWipeTime</h2>
           <p className="text-sm text-zinc-500">
             Track wipe schedules, seasons, and events for your favorite games
           </p>

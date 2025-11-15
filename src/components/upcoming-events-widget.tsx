@@ -1,7 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays, RefreshCw, Gamepad2, PartyPopper, Trophy } from "lucide-react";
+import {
+  CalendarDays,
+  RefreshCw,
+  Gamepad2,
+  PartyPopper,
+  Trophy,
+} from "lucide-react";
 import type { GameEvent } from "@/lib/events/types";
 
 type UpcomingEventsWidgetProps = {
