@@ -149,14 +149,6 @@ const games: Game[] = [
     hoverMediaType: "video",
   },
   {
-    id: "poe2",
-    name: "Path of Exile 2",
-    accentColor: "rgb(170, 117, 76)",
-    backgroundImage: "/images/games/poe2.jpg",
-    hoverMedia: "/videos/games/poe2.webm",
-    hoverMediaType: "video",
-  },
-  {
     id: "warframe",
     name: "Warframe",
     accentColor: "rgb(0, 147, 208)",
@@ -191,14 +183,14 @@ export function GameTabs({ onGameChange }: GameTabsProps) {
               key={game.id}
               type="button"
               onClick={() => handleTabClick(game)}
-              className={`group relative flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
+              className={`group relative flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-300 ${
                 isSelected
                   ? "bg-zinc-800/80 text-zinc-50 ring-1 ring-white/20"
                   : "text-zinc-400 hover:bg-zinc-800/40 hover:text-zinc-300"
               }`}
             >
               <div
-                className={`w-8 h-8 rounded overflow-hidden transition-all duration-200 ${
+                className={`w-8 h-8 rounded overflow-hidden transition-all duration-300 ${
                   isSelected ? "ring-2 ring-offset-2 ring-offset-zinc-900" : ""
                 }`}
                 style={{
@@ -208,7 +200,7 @@ export function GameTabs({ onGameChange }: GameTabsProps) {
                 }}
               >
                 <div
-                  className="w-full h-full transition-all duration-200"
+                  className="w-full h-full transition-all duration-300"
                   style={{
                     backgroundImage: `url('${game.backgroundImage}')`,
                     backgroundSize: "cover",
@@ -222,12 +214,15 @@ export function GameTabs({ onGameChange }: GameTabsProps) {
 
               {game.name}
 
-              {isSelected && (
-                <div
-                  className="absolute bottom-0 left-0 right-0 h-[2px] rounded-full"
-                  style={{ backgroundColor: game.accentColor }}
-                />
-              )}
+              <div
+                className="absolute bottom-0 left-0 right-0 h-[2px] rounded-full transition-all duration-300 ease-out"
+                style={{
+                  backgroundColor: game.accentColor,
+                  opacity: isSelected ? 1 : 0,
+                  transform: isSelected ? "scaleX(1)" : "scaleX(0)",
+                  transformOrigin: "center",
+                }}
+              />
             </button>
           );
         })}

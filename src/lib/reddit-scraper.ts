@@ -13,7 +13,7 @@ export async function scrapeRedditPosts(
     limit?: number;
     sort?: "hot" | "new" | "top" | "rising";
     timeframe?: "hour" | "day" | "week" | "month" | "year" | "all";
-  } = {}
+  } = {},
 ): Promise<RedditPost[]> {
   const { limit = 25, sort = "new", timeframe = "week" } = options;
 
@@ -70,18 +70,18 @@ export async function scrapeRedditPosts(
 export function searchPosts(
   posts: RedditPost[],
   keywords: string[],
-  excludeKeywords: string[] = []
+  excludeKeywords: string[] = [],
 ): RedditPost[] {
   return posts.filter((post) => {
     const content = `${post.title} ${post.selftext}`.toLowerCase();
 
     const hasExcluded = excludeKeywords.some((keyword) =>
-      content.includes(keyword.toLowerCase())
+      content.includes(keyword.toLowerCase()),
     );
     if (hasExcluded) return false;
 
     const hasKeyword = keywords.some((keyword) =>
-      content.includes(keyword.toLowerCase())
+      content.includes(keyword.toLowerCase()),
     );
 
     return hasKeyword;

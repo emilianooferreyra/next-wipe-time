@@ -1,16 +1,19 @@
-import { NextResponse } from 'next/server';
-import { cacheLife } from 'next/cache';
-import { validateCachedData, getSmartCacheDuration } from '@/lib/cache-validator';
-import { scrapeDestiny2Season } from '@/lib/scrapers/destiny2';
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
-import { join } from 'path';
-import type { WipeData } from '@/schemas/wipe-data';
-import { getCacheControlHeader, CachePresets } from '@/lib/cache-headers';
+import { NextResponse } from "next/server";
+import { cacheLife } from "next/cache";
+import {
+  validateCachedData,
+  getSmartCacheDuration,
+} from "@/lib/cache-validator";
+import { scrapeDestiny2Season } from "@/lib/scrapers/destiny2";
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
+import { join } from "path";
+import type { WipeData } from "@/schemas/wipe-data";
+import { getCacheControlHeader, CachePresets } from "@/lib/cache-headers";
 
-const CACHE_FILE = join(process.cwd(), 'cache', 'destiny2-season.json');
+const CACHE_FILE = join(process.cwd(), "cache", "destiny2-season.json");
 
 function ensureCacheDir() {
-  const cacheDir = join(process.cwd(), 'cache');
+  const cacheDir = join(process.cwd(), "cache");
   if (!existsSync(cacheDir)) {
     mkdirSync(cacheDir, { recursive: true });
   }
@@ -20,10 +23,10 @@ function readCache(): WipeData | null {
   try {
     ensureCacheDir();
     if (!existsSync(CACHE_FILE)) return null;
-    const data = readFileSync(CACHE_FILE, 'utf-8');
+    const data = readFileSync(CACHE_FILE, "utf-8");
     return JSON.parse(data) as WipeData;
   } catch (error) {
-    console.error('Error reading cache:', error);
+    console.error("Error reading cache:", error);
     return null;
   }
 }
@@ -33,13 +36,13 @@ function writeCache(data: WipeData) {
     ensureCacheDir();
     writeFileSync(CACHE_FILE, JSON.stringify(data, null, 2));
   } catch (error) {
-    console.error('Error writing cache:', error);
+    console.error("Error writing cache:", error);
   }
 }
 
 async function getCachedSeasonData(forceRefresh: boolean) {
-  'use cache';
-  cacheLife('hours');
+  "use cache";
+  cacheLife("hours");
 
   try {
     if (!forceRefresh) {
@@ -47,7 +50,10 @@ async function getCachedSeasonData(forceRefresh: boolean) {
 
       if (cached) {
         // Smart validation: check if data is actually still valid
-        const cacheDuration = getSmartCacheDuration(cached.eventType, cached.confirmed);
+        const cacheDuration = getSmartCacheDuration(
+          cached.eventType,
+          cached.confirmed,
+        );
         const validation = validateCachedData(cached, cacheDuration);
 
         if (validation.isValid) {
@@ -55,7 +61,9 @@ async function getCachedSeasonData(forceRefresh: boolean) {
             ? Date.now() - new Date(cached.scrapedAt).getTime()
             : 0;
 
-          console.log(`✅ Using valid cache (${validation.reason || 'fresh data'})`);
+          console.log(
+            `✅ Using valid cache (${validation.reason || "fresh data"})`,
+          );
 
           return {
             ...cached,
@@ -69,16 +77,21 @@ async function getCachedSeasonData(forceRefresh: boolean) {
       }
     }
 
-    console.log('Scraping fresh Destiny 2 season data...');
+    console.log("Scraping fresh Destiny 2 season data...");
     const data = await scrapeDestiny2Season();
     writeCache(data);
     return { ...data, fromCache: false };
   } catch (error) {
-    console.error('API Error:', error);
+    console.error("API Error:", error);
     const cached = readCache();
     if (cached) {
-      console.log('⚠️ Scraping failed, serving stale cache');
-      return { ...cached, fromCache: true, stale: true, error: 'Failed to fetch fresh data' };
+      console.log("⚠️ Scraping failed, serving stale cache");
+      return {
+        ...cached,
+        fromCache: true,
+        stale: true,
+        error: "Failed to fetch fresh data",
+      };
     }
     throw error;
   }
@@ -86,7 +99,7 @@ async function getCachedSeasonData(forceRefresh: boolean) {
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const forceRefresh = searchParams.get('refresh') === 'true';
+  const forceRefresh = searchParams.get("refresh") === "true";
 
   try {
     const data = await getCachedSeasonData(forceRefresh);
@@ -98,18 +111,18 @@ export async function GET(request: Request) {
 
     return NextResponse.json(data, {
       headers: {
-        'Cache-Control': getCacheControlHeader(cacheConfig),
+        "Cache-Control": getCacheControlHeader(cacheConfig),
       },
     });
   } catch (error) {
     return NextResponse.json(
-      { error: 'Failed to fetch season data' },
+      { error: "Failed to fetch season data" },
       {
         status: 500,
         headers: {
-          'Cache-Control': getCacheControlHeader(CachePresets.NO_CACHE),
+          "Cache-Control": getCacheControlHeader(CachePresets.NO_CACHE),
         },
-      }
+      },
     );
   }
 }

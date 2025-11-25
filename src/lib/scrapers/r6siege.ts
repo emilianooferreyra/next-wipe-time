@@ -1,63 +1,92 @@
-import { getBrowser } from '../browser';
-import type { WipeData } from '@/schemas/wipe-data';
+import { newPage } from "../browser";
+import type { WipeData } from "@/schemas/wipe-data";
 
 export async function scrapeR6SiegeSeason(): Promise<WipeData> {
-  const browser = await getBrowser();
-  const page = await browser.newPage();
+  const page = await newPage();
 
   try {
-    console.log('📍 Navigating to Rainbow Six Siege news...');
+    console.log("📍 Navigating to Rainbow Six Siege news...");
 
-    await page.goto('https://www.ubisoft.com/en-us/game/rainbow-six/siege/news-updates', {
-      waitUntil: 'domcontentloaded',
+    await page.goto("https://www.ubisoft.com/en-us/game/rainbow-six/siege/news-updates", {
+      waitUntil: "domcontentloaded",
       timeout: 30000,
     });
 
-    console.log('✅ Page loaded, waiting for content...');
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    console.log("✅ Page loaded, waiting for content...");
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
     const data = await page.evaluate(() => {
-      const articles = Array.from(document.querySelectorAll('article, .news-item, [class*="news"]'));
-
-      let seasonInfo = null;
+      const articles = Array.from(
+        document.querySelectorAll('a[href*="/news/"]'),
+      );
 
       for (const article of articles) {
-        const text = article.textContent || '';
-        const lowerText = text.toLowerCase();
+        const titleElement = article.querySelector("h3");
+        const title = titleElement?.textContent?.trim() || "";
+        const lowerTitle = title.toLowerCase();
 
-        if (lowerText.includes('season') && (lowerText.includes('release') || lowerText.includes('launch'))) {
-          seasonInfo = text;
-          break;
+        if (lowerTitle.includes("season") && (lowerTitle.includes("release") || lowerTitle.includes("reveal"))) {
+          const link = (article as HTMLAnchorElement).href;
+          const fullText = article.textContent?.toLowerCase() || "";
+          
+          const dateMatch = fullText.match(
+            /(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})/i,
+          );
+
+          if (dateMatch) {
+            return {
+              title,
+              link,
+              dateText: `${dateMatch[1]} ${dateMatch[2]}`,
+            };
+          }
         }
       }
-
-      return {
-        seasonInfo,
-        pageText: document.body.innerText.substring(0, 2000),
-      };
+      return null;
     });
 
-    console.log('Scraped data:', data);
+    if (data) {
+      const { title, link, dateText } = data;
+      const potentialDate = new Date(`${dateText}, ${new Date().getFullYear()}`);
 
-    // R6 Siege seasons typically last ~3 months
+      if (potentialDate > new Date()) {
+        potentialDate.setUTCHours(16, 0, 0, 0); // R6 Siege seasons typically start at 10 AM ET
+
+        const lastWipe = new Date(potentialDate);
+        lastWipe.setMonth(lastWipe.getMonth() - 3); // ~3 months per season
+
+        return {
+          nextWipe: potentialDate.toISOString(),
+          lastWipe: lastWipe.toISOString(),
+          frequency: "Every ~3 months (4 seasons per year)",
+          source: "Ubisoft News (Official)",
+          scrapedAt: new Date().toISOString(),
+          confirmed: true,
+          announcement: title,
+          patchNotes: link,
+        };
+      }
+    }
+
+    // Fallback if no specific date is found
+    console.log("⚠️ No specific date found, using estimation.");
     const now = new Date();
     const lastWipe = new Date(now);
     lastWipe.setDate(lastWipe.getDate() - 45);
-
     const nextWipe = new Date(now);
     nextWipe.setDate(nextWipe.getDate() + 45);
 
     return {
       nextWipe: nextWipe.toISOString(),
       lastWipe: lastWipe.toISOString(),
-      frequency: 'Every ~3 months (4 seasons per year)',
-      source: 'https://www.ubisoft.com/en-us/game/rainbow-six/siege',
+      frequency: "Every ~3 months (4 seasons per year)",
+      source: "Ubisoft News (Estimated)",
       scrapedAt: new Date().toISOString(),
       confirmed: false,
-      announcement: 'Check Ubisoft news for confirmed season dates',
+      announcement: "Check Ubisoft news for confirmed season dates",
     };
   } catch (error) {
-    console.error('Error scraping R6 Siege:', error);
+    console.error("Error scraping R6 Siege:", error);
     throw new Error(`Failed to scrape R6 Siege season data: ${error}`);
   } finally {
     await page.close();

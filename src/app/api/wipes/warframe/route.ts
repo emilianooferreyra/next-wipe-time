@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
 import { cacheLife } from "next/cache";
 import { scrapeWarframeUpdate } from "@/lib/scrapers/warframe";
-import { validateCachedData, getSmartCacheDuration } from "@/lib/cache-validator";
+import {
+  validateCachedData,
+  getSmartCacheDuration,
+} from "@/lib/cache-validator";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
-import type { WipeData } from '@/schemas/wipe-data';
-import { getCacheControlHeader, CachePresets } from '@/lib/cache-headers';
+import type { WipeData } from "@/schemas/wipe-data";
+import { getCacheControlHeader, CachePresets } from "@/lib/cache-headers";
 
 const CACHE_FILE = join(process.cwd(), "cache", "warframe-update.json");
 
@@ -47,7 +50,10 @@ async function getCachedUpdateData(forceRefresh: boolean) {
 
       if (cached) {
         // Smart validation: check if data is actually still valid
-        const cacheDuration = getSmartCacheDuration(cached.eventType, cached.confirmed);
+        const cacheDuration = getSmartCacheDuration(
+          cached.eventType,
+          cached.confirmed,
+        );
         const validation = validateCachedData(cached, cacheDuration);
 
         if (validation.isValid) {
@@ -55,7 +61,9 @@ async function getCachedUpdateData(forceRefresh: boolean) {
             ? Date.now() - new Date(cached.scrapedAt).getTime()
             : 0;
 
-          console.log(`✅ Using valid cache (${validation.reason || 'fresh data'})`);
+          console.log(
+            `✅ Using valid cache (${validation.reason || "fresh data"})`,
+          );
 
           return {
             ...cached,
@@ -77,7 +85,7 @@ async function getCachedUpdateData(forceRefresh: boolean) {
     console.error("API Error:", error);
     const cached = readCache();
     if (cached) {
-      console.log('⚠️ Scraping failed, serving stale cache');
+      console.log("⚠️ Scraping failed, serving stale cache");
       return {
         ...cached,
         fromCache: true,
@@ -103,7 +111,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(data, {
       headers: {
-        'Cache-Control': getCacheControlHeader(cacheConfig),
+        "Cache-Control": getCacheControlHeader(cacheConfig),
       },
     });
   } catch (error) {
@@ -112,9 +120,9 @@ export async function GET(request: Request) {
       {
         status: 500,
         headers: {
-          'Cache-Control': getCacheControlHeader(CachePresets.NO_CACHE),
+          "Cache-Control": getCacheControlHeader(CachePresets.NO_CACHE),
         },
-      }
+      },
     );
   }
 }

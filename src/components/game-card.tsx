@@ -1,29 +1,88 @@
 "use client";
 
-import { useState, useEffect, memo } from "react";
+import { useState, useEffect, memo, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, CalendarDays, Info } from "lucide-react";
+import { AlertTriangle, CalendarDays, Info, ChevronDown } from "lucide-react";
+import { useWipeData } from "@/hooks/use-wipe-data";
+import {
+  getVersionsForGame,
+  hasMultipleVersions,
+  getGameVersion,
+} from "@/lib/games-config";
 import type { Game } from "./game-tabs";
 import type { WipeData } from "@/types/game";
 
 type GameCardProps = {
   game: Game;
+  // Optional override for wipeData (for backward compatibility)
   wipeData?: WipeData;
   loading?: boolean;
 };
 
 export const GameCard = memo(
-  ({ game, wipeData, loading }: GameCardProps) => {
+  ({ game, wipeData: propWipeData, loading: propLoading }: GameCardProps) => {
     const router = useRouter();
+    const dropdownRef = useRef<HTMLDivElement>(null);
     const [timeLeft, setTimeLeft] = useState<string>("");
     const [progressPercentage, setProgressPercentage] = useState(0);
     const [isHovering, setIsHovering] = useState(false);
+    const [selectedVersionId, setSelectedVersionId] = useState<string>(game.id);
+    const [isVersionDropdownOpen, setIsVersionDropdownOpen] =
+      useState<boolean>(false);
+
+    // Use TanStack Query hook to fetch wipe data for selected version
+    const {
+      data: fetchedWipeData,
+      loading: fetchLoading,
+      error: fetchError,
+    } = useWipeData(selectedVersionId);
+
+    // If the selected version is different from the base game,
+    // use fetched data. Otherwise, use prop data if provided.
+    const useFetchedData = selectedVersionId !== game.id;
+    const wipeData = useFetchedData
+      ? fetchedWipeData
+      : propWipeData || fetchedWipeData;
+    const loading = useFetchedData ? fetchLoading : propLoading ?? fetchLoading;
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+      function handleClickOutside(event: MouseEvent) {
+        if (
+          dropdownRef.current &&
+          !dropdownRef.current.contains(event.target as Node)
+        ) {
+          setIsVersionDropdownOpen(false);
+        }
+      }
+
+      if (isVersionDropdownOpen) {
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+          document.removeEventListener("mousedown", handleClickOutside);
+        };
+      }
+    }, [isVersionDropdownOpen]);
+
+    // Get version info for the current game
+    const hasVersions = hasMultipleVersions(game.id);
+    const versions = getVersionsForGame(game.id);
+    const currentVersionInfo = getGameVersion(selectedVersionId);
+
+    // Dynamic background image based on selected version
+    const backgroundImage =
+      currentVersionInfo?.version.image || game.backgroundImage;
+    const hoverMedia = game.hoverMedia || undefined;
 
     const nextWipe = wipeData?.nextWipe ? new Date(wipeData.nextWipe) : null;
     const lastWipe = wipeData?.lastWipe ? new Date(wipeData.lastWipe) : null;
 
-    const handleCardClick = () => {
-      router.push(`/game/${game.id}`);
+    const handleCardClick = (e: React.MouseEvent) => {
+      // Don't navigate if clicking on the version dropdown
+      if (dropdownRef.current?.contains(e.target as Node)) {
+        return;
+      }
+      router.push(`/game/${selectedVersionId}`);
     };
 
     // Determine if countdown should show
@@ -183,6 +242,7 @@ export const GameCard = memo(
           boxShadow: `0 4px 20px ${game.accentColor}10`,
         }}
       >
+        {/* Hidden button for keyboard events */}
         {/* Game Image */}
         <div
           className="relative h-48 overflow-hidden"
@@ -192,18 +252,18 @@ export const GameCard = memo(
           {/* Static image - always visible */}
           <div
             className={`absolute inset-0 bg-cover bg-center transition-all duration-700 ease-in-out ${
-              isHovering && game.hoverMedia
+              isHovering && hoverMedia
                 ? "opacity-0 scale-110"
                 : "opacity-100 scale-100"
             }`}
             style={{
-              backgroundImage: `url('${game.backgroundImage}')`,
+              backgroundImage: `url('${backgroundImage}')`,
               filter: "brightness(0.7)",
             }}
           />
 
           {/* Hover media (video or GIF) - always rendered for smooth transition */}
-          {game.hoverMedia && (
+          {hoverMedia && (
             <>
               {game.hoverMediaType === "video" ? (
                 <video
@@ -217,17 +277,15 @@ export const GameCard = memo(
                   style={{ filter: "brightness(0.7)" }}
                 >
                   <source
-                    src={game.hoverMedia}
+                    src={hoverMedia}
                     type={
-                      game.hoverMedia.endsWith(".mp4")
-                        ? "video/mp4"
-                        : "video/webm"
+                      hoverMedia.endsWith(".mp4") ? "video/mp4" : "video/webm"
                     }
                   />
                 </video>
               ) : (
                 <img
-                  src={game.hoverMedia}
+                  src={hoverMedia}
                   alt={`${game.name} gameplay`}
                   className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-in-out ${
                     isHovering ? "opacity-100 scale-105" : "opacity-0 scale-100"
@@ -267,11 +325,66 @@ export const GameCard = memo(
         </div>
 
         {/* Content */}
-        <div className="p-6">
-          {/* Game name and event type */}
-          <div className="mb-4">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="text-2xl font-bold text-zinc-50">{game.name}</h3>
+        <div className="p-6 transition-all duration-300">
+          {/* Game name and version selector */}
+          <div className="mb-4 transition-all duration-300">
+            <div className="flex items-center gap-2 mb-1 justify-between">
+              <h3 className="text-2xl font-bold text-zinc-50">
+                {currentVersionInfo?.version.label
+                  ? `${game.name} ${currentVersionInfo.version.label}`
+                  : currentVersionInfo?.version.shortLabel || game.name}
+              </h3>
+              {hasVersions && versions.length > 1 && (
+                <div className="relative" ref={dropdownRef}>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsVersionDropdownOpen(!isVersionDropdownOpen);
+                    }}
+                    className="flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700/50 hover:border-zinc-600 text-sm font-medium text-zinc-300 transition-all"
+                  >
+                    {currentVersionInfo?.version.shortLabel ||
+                      currentVersionInfo?.version.label}
+                    <ChevronDown
+                      className={`w-3 h-3 transition-transform ${
+                        isVersionDropdownOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+
+                  {/* Dropdown menu - only show when open */}
+                  <div
+                    className={`absolute right-0 mt-2 w-56 rounded-2xl bg-zinc-900 border border-zinc-700/50 shadow-lg z-50 transition-all duration-300 ease-out origin-top-right ${
+                      isVersionDropdownOpen
+                        ? "opacity-100 scale-100 pointer-events-auto"
+                        : "opacity-0 scale-95 pointer-events-none"
+                    }`}
+                  >
+                    {versions.map((version, index) => (
+                      <button
+                        key={version.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedVersionId(version.id);
+                          setIsVersionDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-4 py-3 text-sm transition-all duration-200 first:rounded-t-2xl last:rounded-b-2xl ${
+                          selectedVersionId === version.id
+                            ? "bg-zinc-700 text-zinc-50 font-medium"
+                            : "text-zinc-300 hover:bg-zinc-800"
+                        }`}
+                        style={{
+                          transitionDelay: isVersionDropdownOpen
+                            ? `${index * 30}ms`
+                            : "0ms",
+                        }}
+                      >
+                        {version.label || version.shortLabel}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             <p className="text-sm text-zinc-400">{getEventTitle()}</p>
             {wipeData?.eventName && (

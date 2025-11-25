@@ -28,21 +28,21 @@ export async function getUpcomingEvents(): Promise<GameEvent[]> {
             game.id === "poe"
               ? "wipe"
               : game.id === "diablo4"
-              ? "season"
-              : game.id === "lastepoch"
-              ? "wipe"
-              : "wipe";
+                ? "season"
+                : game.id === "lastepoch"
+                  ? "wipe"
+                  : "wipe";
 
           const title =
             game.id === "poe"
               ? "New League"
               : game.id === "diablo4"
-              ? "New Season"
-              : game.id === "lastepoch"
-              ? "New Cycle"
-              : game.id === "fortnite"
-              ? "New Season"
-              : "Wipe";
+                ? "New Season"
+                : game.id === "lastepoch"
+                  ? "New Cycle"
+                  : game.id === "fortnite"
+                    ? "New Season"
+                    : "Wipe";
 
           events.push({
             id: `${game.id}-next-wipe`,
@@ -70,7 +70,7 @@ export async function getUpcomingEvents(): Promise<GameEvent[]> {
 }
 
 export async function getEventsForNextDays(
-  days: number = 30
+  days: number = 30,
 ): Promise<GameEvent[]> {
   const allEvents = await getUpcomingEvents();
   const now = new Date();
@@ -101,7 +101,7 @@ export function groupEventsByDate(events: GameEvent[]): {
 
 export async function getEventsForMonth(
   year: number,
-  month: number
+  month: number,
 ): Promise<GameEvent[]> {
   const allEvents = await getUpcomingEvents();
 

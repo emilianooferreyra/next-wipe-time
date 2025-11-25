@@ -3,16 +3,18 @@
  * Detects if cached data is stale based on event dates, not just cache age
  */
 
-import type { WipeData } from '@/schemas/wipe-data';
+import type { WipeData } from "@/schemas/wipe-data";
 
-export type CachedEventData = {
-  nextWipe?: string | null;
-  lastWipe?: string | null;
-  scrapedAt?: string;
-  confirmed?: boolean;
-  eventType?: string;
-  [key: string]: any;
-} | WipeData;
+export type CachedEventData =
+  | {
+      nextWipe?: string | null;
+      lastWipe?: string | null;
+      scrapedAt?: string;
+      confirmed?: boolean;
+      eventType?: string;
+      [key: string]: any;
+    }
+  | WipeData;
 
 export type ValidationResult = {
   isValid: boolean;
@@ -32,12 +34,12 @@ export type ValidationResult = {
  */
 export function validateCachedData(
   cachedData: CachedEventData,
-  maxCacheAge: number = 6 * 60 * 60 * 1000 // 6 hours default
+  maxCacheAge: number = 6 * 60 * 60 * 1000, // 6 hours default
 ): ValidationResult {
   if (!cachedData) {
     return {
       isValid: false,
-      reason: 'No cached data',
+      reason: "No cached data",
       shouldRefresh: true,
     };
   }
@@ -84,7 +86,8 @@ export function validateCachedData(
           if (cacheAge > twoHours) {
             return {
               isValid: false,
-              reason: 'Event recently happened, checking for next event announcement',
+              reason:
+                "Event recently happened, checking for next event announcement",
               shouldRefresh: true,
             };
           }
@@ -104,7 +107,7 @@ export function validateCachedData(
       if (cacheAge > threeHours) {
         return {
           isValid: false,
-          reason: 'Unconfirmed date - checking for official announcement',
+          reason: "Unconfirmed date - checking for official announcement",
           shouldRefresh: true,
         };
       }
@@ -116,7 +119,7 @@ export function validateCachedData(
     const eventType = cachedData.eventType.toLowerCase();
 
     // Patches and hotfixes should refresh more frequently (2 hours)
-    if (eventType === 'patch' || eventType === 'hotfix') {
+    if (eventType === "patch" || eventType === "hotfix") {
       if (cachedData.scrapedAt) {
         const cacheAge = now - new Date(cachedData.scrapedAt).getTime();
         const twoHours = 2 * 60 * 60 * 1000;
@@ -124,7 +127,7 @@ export function validateCachedData(
         if (cacheAge > twoHours) {
           return {
             isValid: false,
-            reason: 'Patch data refreshes every 2 hours',
+            reason: "Patch data refreshes every 2 hours",
             shouldRefresh: true,
           };
         }
@@ -132,7 +135,7 @@ export function validateCachedData(
     }
 
     // Special events should refresh every 4 hours during event season
-    if (eventType === 'event') {
+    if (eventType === "event") {
       if (cachedData.scrapedAt) {
         const cacheAge = now - new Date(cachedData.scrapedAt).getTime();
         const fourHours = 4 * 60 * 60 * 1000;
@@ -140,7 +143,7 @@ export function validateCachedData(
         if (cacheAge > fourHours) {
           return {
             isValid: false,
-            reason: 'Special event data refreshes every 4 hours',
+            reason: "Special event data refreshes every 4 hours",
             shouldRefresh: true,
           };
         }
@@ -158,7 +161,10 @@ export function validateCachedData(
 /**
  * Helper to determine cache duration based on event type
  */
-export function getSmartCacheDuration(eventType?: string, confirmed?: boolean): number {
+export function getSmartCacheDuration(
+  eventType?: string,
+  confirmed?: boolean,
+): number {
   // Unconfirmed dates: 3 hours
   if (confirmed === false) {
     return 3 * 60 * 60 * 1000;
@@ -171,17 +177,17 @@ export function getSmartCacheDuration(eventType?: string, confirmed?: boolean): 
   const type = eventType.toLowerCase();
 
   // Patches/Hotfixes: 2 hours (frequent updates)
-  if (type === 'patch' || type === 'hotfix') {
+  if (type === "patch" || type === "hotfix") {
     return 2 * 60 * 60 * 1000;
   }
 
   // Special events: 4 hours (moderate updates)
-  if (type === 'event') {
+  if (type === "event") {
     return 4 * 60 * 60 * 1000;
   }
 
   // Leagues/Seasons: 6 hours (less frequent updates)
-  if (type === 'league' || type === 'season') {
+  if (type === "league" || type === "season") {
     return 6 * 60 * 60 * 1000;
   }
 

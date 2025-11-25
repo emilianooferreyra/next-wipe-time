@@ -60,7 +60,7 @@ export function GameFilters({
   ];
 
   return (
-    <div className="relative border-b border-white/5 bg-[#242938]/30 backdrop-blur-sm">
+    <div className="relative border-b border-white/5 bg-[#000000]/30 backdrop-blur-sm">
       <div className="mx-auto max-w-7xl px-6">
         <nav className="flex gap-1 overflow-x-auto" aria-label="Filter games">
           {tabs.map((tab) => {
@@ -69,13 +69,13 @@ export function GameFilters({
               <button
                 key={tab.id}
                 onClick={() => onFilterChange(tab.id as FilterType)}
-                className={`relative px-6 py-4 text-sm font-medium transition-all duration-200 whitespace-nowrap ${
+                className={`relative px-6 py-4 text-sm font-medium transition-all duration-300 whitespace-nowrap ${
                   isActive
                     ? "text-[#FA5D29]"
                     : "text-zinc-400 hover:text-zinc-300"
                 }`}
               >
-                <span className="flex items-center gap-2">
+                <span className="flex items-center gap-2 transition-colors duration-300">
                   {tab.icon &&
                     (typeof tab.icon === "string" ? (
                       <span>{tab.icon}</span>
@@ -85,7 +85,7 @@ export function GameFilters({
                   <span>{tab.label}</span>
                   {tab.count !== undefined && tab.count > 0 && (
                     <span
-                      className={`px-2 py-0.5 rounded-full text-xs ${
+                      className={`px-2 py-0.5 rounded-full text-xs transition-all duration-300 ${
                         isActive
                           ? "bg-[#FA5D29]/20 text-[#FA5D29]"
                           : "bg-zinc-800 text-zinc-500"
@@ -95,9 +95,14 @@ export function GameFilters({
                     </span>
                   )}
                 </span>
-                {isActive && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FA5D29]" />
-                )}
+                <div
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FA5D29] transition-all duration-300 ease-out"
+                  style={{
+                    opacity: isActive ? 1 : 0,
+                    transform: isActive ? "scaleX(1)" : "scaleX(0)",
+                    transformOrigin: "center",
+                  }}
+                />
               </button>
             );
           })}

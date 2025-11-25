@@ -1,47 +1,44 @@
-import { useEffect, useState } from 'react';
+"use client";
 
-type WipeData = {
-  nextWipe: string;
-  lastWipe: string;
-  frequency: string;
-  source: string;
-  scrapedAt: string;
-  fromCache?: boolean;
-  cacheAge?: number;
-  backgroundImage?: string;
-  confirmed?: boolean;
-  announcement?: string;
-  isRelease?: boolean;
-};
+import { useQuery } from "@tanstack/react-query";
+import { parseWipeData } from "@/schemas/wipe-data";
+import type { WipeData } from "@/types/game";
 
-export function useWipeData(gameId: string) {
-  const [data, setData] = useState<WipeData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+/**
+ * Fetch wipe data for a specific game version
+ * Uses TanStack Query for caching, refetching, and state management
+ *
+ * @param gameId - The game version ID (e.g., "diablo-iv", "poe2")
+ * @returns Query result with data, isLoading, isError, error
+ */
+export function useWipeData(gameId: string | null) {
+  const { data, isLoading, isError, error } = useQuery<WipeData | null>({
+    queryKey: ["wipe", gameId],
+    queryFn: async () => {
+      if (!gameId) return null;
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        setLoading(true);
-        const response = await fetch(`/api/wipes/${gameId}`);
+      const res = await fetch(`/api/wipes/${gameId}`, {
+        cache: "no-store",
+      });
 
-        if (!response.ok) {
-          throw new Error(`Failed to fetch data: ${response.statusText}`);
-        }
-
-        const result = await response.json();
-        setData(result);
-        setError(null);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch data');
-        console.error('Error fetching wipe data:', err);
-      } finally {
-        setLoading(false);
+      if (!res.ok) {
+        throw new Error(`Failed to fetch wipe data for ${gameId}`);
       }
-    }
 
-    fetchData();
-  }, [gameId]);
+      const data = await res.json();
+      return parseWipeData(data);
+    },
+    enabled: !!gameId, // Don't fetch if gameId is null/undefined
+    staleTime: 0,
+    gcTime: 10 * 60 * 1000,
+    retry: 2,
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+  });
 
-  return { data, loading, error };
+  return {
+    data: data || null,
+    loading: isLoading,
+    error: error instanceof Error ? error.message : null,
+  };
 }

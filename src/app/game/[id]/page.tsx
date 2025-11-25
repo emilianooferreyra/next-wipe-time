@@ -4,7 +4,15 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { games } from "@/components/game-tabs";
+import {
+  getBaseGameIdForVersion,
+  getVersionsForGame,
+  getGameVersion,
+} from "@/lib/games-config";
 import { MoveLeft, MoveRight } from "lucide-react";
+import { LiveStreams } from "@/components/live-streams";
+import { GameVideos } from "@/components/game-videos";
+import { WipeChangelog } from "@/components/wipe-changelog";
 
 export default function GameDetailsPage() {
   const params = useParams();
@@ -14,7 +22,14 @@ export default function GameDetailsPage() {
   const [, setLoading] = useState(true);
   const [timeLeft, setTimeLeft] = useState<string>("");
 
-  const game = games.find((g) => g.id === gameId);
+  // Map version ID to base game ID for finding in the games array
+  const baseGameId = getBaseGameIdForVersion(gameId);
+  const game = games.find((g) => g.id === baseGameId);
+
+  // Get version information if this is a versioned game
+  const versionInfo = getGameVersion(gameId);
+  const versions = getVersionsForGame(baseGameId);
+  const currentVersion = versions.find((v) => v.id === gameId);
 
   useEffect(() => {
     if (!game) return;
@@ -42,18 +57,18 @@ export default function GameDetailsPage() {
 
     const updateCountdown = () => {
       const nextWipe = new Date(wipeData.nextWipe);
-      setTimeLeft(calculateTimeLeft(nextWipe, game?.id, wipeData));
+      setTimeLeft(calculateTimeLeft(gameId, wipeData));
     };
 
     updateCountdown();
     const interval = setInterval(updateCountdown, 1000);
 
     return () => clearInterval(interval);
-  }, [wipeData]);
+  }, [wipeData, gameId]);
 
   if (!game) {
     return (
-      <div className="min-h-screen bg-[#1a1f2e] flex items-center justify-center">
+      <div className="min-h-screen bg-[#000000] flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-zinc-50 mb-4">
             Game not found
@@ -73,15 +88,21 @@ export default function GameDetailsPage() {
   console.log(`[${gameId}] nextWipe:`, nextWipe);
   console.log(`[${gameId}] confirmed:`, wipeData?.confirmed);
 
+  // Use version-specific image if available
+  const displayImage = currentVersion?.image || game.backgroundImage;
+  const displayGameName = currentVersion?.label
+    ? `${game.name} ${currentVersion.label}`
+    : game.name;
+
   return (
-    <div className="min-h-screen bg-[#1a1f2e]">
+    <div className="min-h-screen bg-[#000000]">
       {/* Hero section with game background */}
       <div className="relative h-[400px] overflow-hidden">
         {/* Background image/video */}
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
-            backgroundImage: `url('${game.backgroundImage}')`,
+            backgroundImage: `url('${displayImage}')`,
             filter: "brightness(0.4)",
           }}
         />
@@ -90,7 +111,7 @@ export default function GameDetailsPage() {
         <div
           className="absolute inset-0"
           style={{
-            background: `linear-gradient(to bottom, transparent 0%, #1a1f2e 100%)`,
+            background: `linear-gradient(to bottom, transparent 0%, #000000 100%)`,
           }}
         />
 
@@ -104,13 +125,34 @@ export default function GameDetailsPage() {
           </Link>
 
           <div className="flex items-end gap-4">
-            <h1 className="text-5xl font-bold text-zinc-50">{game.name}</h1>
+            <h1 className="text-5xl font-bold text-zinc-50">
+              {displayGameName}
+            </h1>
             {game.id === "deadlock" && (
               <span className="inline-flex items-center px-3 py-1 rounded text-sm font-semibold bg-orange-500/20 text-orange-400 border border-orange-500/30 mb-2">
                 BETA
               </span>
             )}
           </div>
+
+          {/* Version selector if multiple versions */}
+          {versions.length > 1 && (
+            <div className="mt-4 inline-flex gap-2 flex-wrap">
+              {versions.map((v) => (
+                <Link
+                  key={v.id}
+                  href={`/game/${v.id}`}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    gameId === v.id
+                      ? "bg-[#FA5D29]/20 border border-[#FA5D29]/50 text-[#FA5D29]"
+                      : "bg-zinc-800/50 border border-zinc-700/50 text-zinc-300 hover:border-zinc-600"
+                  }`}
+                >
+                  {v.label || v.shortLabel}
+                </Link>
+              ))}
+            </div>
+          )}
 
           {wipeData?.confirmed !== undefined && (
             <div className="mt-4 inline-flex w-fit">
@@ -141,7 +183,7 @@ export default function GameDetailsPage() {
             {nextWipe && (
               <div className="bg-[#242938]/50 border border-white/5 rounded-xl p-8">
                 <h2 className="text-2xl font-bold text-zinc-50 mb-6">
-                  {getEventTitle(game.id, wipeData)}
+                  {getEventTitle(gameId, wipeData)}
                 </h2>
 
                 <div
@@ -267,6 +309,43 @@ export default function GameDetailsPage() {
               </div>
             )}
 
+            {/* Live Streams section */}
+            {gameId === "tarkov" && (
+              <div className="bg-[#242938]/50 border border-white/5 rounded-xl p-8">
+                <h2 className="text-xl font-bold text-zinc-50 mb-4">
+                  Live Streamers
+                </h2>
+                <LiveStreams gameId={gameId} />
+              </div>
+            )}
+
+            {/* Changelog section */}
+            {wipeData?.changelog && (
+              <div className="bg-[#242938]/50 border border-white/5 rounded-xl p-8">
+                <h2 className="text-xl font-bold text-zinc-50 mb-6">
+                  What's New in This Update
+                </h2>
+                <WipeChangelog
+                  title={wipeData.changelog.title}
+                  summary={wipeData.changelog.summary}
+                  features={wipeData.changelog.features}
+                  bugFixes={wipeData.changelog.bugFixes}
+                  balanceChanges={wipeData.changelog.balanceChanges}
+                  sourceUrl={wipeData.changelog.sourceUrl}
+                />
+              </div>
+            )}
+
+            {/* Videos section */}
+            {gameId === "tarkov" && (
+              <div className="bg-[#242938]/50 border border-white/5 rounded-xl p-8">
+                <h2 className="text-xl font-bold text-zinc-50 mb-6">
+                  Latest Videos
+                </h2>
+                <GameVideos gameId={gameId} />
+              </div>
+            )}
+
             {wipeData?.announcement && (
               <div className="bg-[#242938]/50 border border-white/5 rounded-xl p-8">
                 <h2 className="text-xl font-bold text-zinc-50 mb-4">
@@ -292,7 +371,7 @@ export default function GameDetailsPage() {
                     Check official sources:
                   </h3>
                   <ul className="space-y-2 text-sm">
-                    {getOfficialLinks(game.id).map((link) => (
+                    {getOfficialLinks(baseGameId).map((link) => (
                       <li key={link.url}>
                         <a
                           href={link.url}
@@ -354,7 +433,7 @@ export default function GameDetailsPage() {
 
             <div className="bg-[#242938]/50 border border-white/5 rounded-xl overflow-hidden">
               <img
-                src={game.backgroundImage}
+                src={displayImage}
                 alt={game.name}
                 className="w-full h-48 object-cover"
               />
@@ -366,52 +445,15 @@ export default function GameDetailsPage() {
   );
 }
 
-function calculateTimeLeft(
-  targetDate: Date,
-  gameId?: string,
-  wipeData?: any
-): string {
+function calculateTimeLeft(gameId: string, wipeData?: any): string {
+  const targetDate = wipeData?.nextWipe ? new Date(wipeData.nextWipe) : null;
+  if (!targetDate) return "No date";
+
   const now = new Date();
   const diff = targetDate.getTime() - now.getTime();
 
   if (diff <= 0) {
-    const eventType =
-      gameId === "poe"
-        ? wipeData?.eventType === "event"
-          ? "Event"
-          : wipeData?.eventType === "patch"
-          ? "Patch"
-          : "League"
-        : gameId === "poe2"
-        ? wipeData?.eventType === "league"
-          ? "League"
-          : wipeData?.eventType === "patch"
-          ? "Patch"
-          : "Update"
-        : gameId === "diablo4"
-        ? "Season"
-        : gameId === "lastepoch"
-        ? "Cycle"
-        : gameId === "fortnite"
-        ? "Season"
-        : gameId === "valorant"
-        ? "Act"
-        : gameId === "lol"
-        ? "Season"
-        : gameId === "tft"
-        ? "Set"
-        : gameId === "overwatch2"
-        ? "Season"
-        : gameId === "destiny2"
-        ? "Season"
-        : gameId === "r6siege"
-        ? "Season"
-        : gameId === "warframe"
-        ? "Update"
-        : gameId === "deadlock"
-        ? "Patch"
-        : "Wipe";
-
+    const eventType = getEventTypeLabel(gameId);
     return `${eventType} is LIVE!`;
   }
 
@@ -421,6 +463,20 @@ function calculateTimeLeft(
   const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
   return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+}
+
+function getEventTypeLabel(gameId: string): string {
+  if (gameId.startsWith("diablo")) return "Season";
+  if (gameId.startsWith("poe")) return "League";
+  if (gameId === "fortnite") return "Season";
+  if (gameId === "valorant") return "Act";
+  if (gameId === "lol") return "Season";
+  if (gameId === "tft") return "Set";
+  if (gameId === "overwatch2") return "Season";
+  if (gameId === "destiny2") return "Season";
+  if (gameId === "r6siege") return "Season";
+  if (gameId === "warframe") return "Update";
+  return "Wipe";
 }
 
 function getEventTitle(gameId: string, wipeData: any): string {
@@ -443,8 +499,8 @@ function getEventTitle(gameId: string, wipeData: any): string {
     return "Next Set";
   }
 
-  if (gameId === "poe") return "Next League";
-  if (gameId === "diablo4") return "Next Season";
+  if (gameId.startsWith("poe")) return "Next League";
+  if (gameId.startsWith("diablo")) return "Next Season";
   if (gameId === "lastepoch") return "Next Cycle";
   if (gameId === "deadlock") return "Next Patch";
   if (gameId === "fortnite") return "Next Season";

@@ -1,11 +1,11 @@
 export type EventType =
-  | 'wipe'          // Full wipe/season start
-  | 'season'        // New season (for games like Fortnite)
-  | 'update'        // Major update/patch
-  | 'event'         // In-game event (double XP, etc)
-  | 'tournament'    // Official tournament
-  | 'playtest'      // Beta test / Early access
-  | 'maintenance';  // Scheduled downtime
+  | "wipe" // Full wipe/season start
+  | "season" // New season (for games like Fortnite)
+  | "update" // Major update/patch
+  | "event" // In-game event (double XP, etc)
+  | "tournament" // Official tournament
+  | "playtest" // Beta test / Early access
+  | "maintenance"; // Scheduled downtime
 
 export type GameEvent = {
   id: string;

@@ -1,47 +1,88 @@
-import { getBrowser } from '../browser';
-import type { WipeData } from '@/schemas/wipe-data';
+import { newPage } from "../browser";
+import type { WipeData } from "@/schemas/wipe-data";
+
+// Helper function to construct WipeData object consistently
+function createWipeData(
+  nextWipe: Date,
+  lastWipe: Date,
+  confirmed: boolean,
+  announcement: string,
+  eventType: "league" | "patch" | "update" | "event" = "league",
+  eventName?: string,
+  patchNotes?: string,
+  source: string = "https://www.pathofexile.com/forum/view-forum/2212 (Estimated)",
+  frequency: string = "Leagues every ~13 weeks"
+): WipeData {
+  return {
+    nextWipe: nextWipe.toISOString(),
+    lastWipe: lastWipe.toISOString(),
+    frequency,
+    source,
+    scrapedAt: new Date().toISOString(),
+    confirmed,
+    announcement,
+    eventType,
+    eventName,
+    patchNotes,
+  };
+}
 
 export async function scrapePoe2League(): Promise<WipeData> {
-  const browser = await getBrowser();
-  const page = await browser.newPage();
+  const page = await newPage();
 
   try {
-    console.log('📍 Navigating to Path of Exile 2 patch notes...');
+    console.log("📍 Navigating to Path of Exile 2 patch notes...");
 
     // Check PoE2 announcements forum
-    await page.goto('https://www.pathofexile.com/forum/view-forum/2212', {
-      waitUntil: 'domcontentloaded',
+    await page.goto("https://www.pathofexile.com/forum/view-forum/2212", {
+      waitUntil: "domcontentloaded",
       timeout: 30000,
     });
 
-    console.log('✅ Page loaded, waiting for content...');
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    console.log("✅ Page loaded, waiting for content...");
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
     const data = await page.evaluate(() => {
       // Look for ALL important announcements
-      const posts = Array.from(document.querySelectorAll('.title, .announcement, [class*="post"]'));
+      const posts = Array.from(
+        document.querySelectorAll('.title, .announcement, [class*="post"]'),
+      );
 
       let foundEvent = {
-        type: 'patch' as 'league' | 'patch' | 'update' | 'event',
+        type: "patch" as "league" | "patch" | "update" | "event",
         title: null as string | null,
         dateText: null as string | null,
         isLeague: false,
         isPatch: false,
         isEvent: false,
+        link: null as string | null, // Added to capture the link to the news post
       };
 
       for (const post of posts) {
-        const text = post.textContent || '';
+        const text = post.textContent || "";
         const lowerText = text.toLowerCase();
 
+        // Try to get the link of the post
+        const linkElement = post.querySelector("a");
+        if (linkElement && linkElement.href) {
+          foundEvent.link = linkElement.href;
+        }
+
         // Priority 1: LEAGUE announcement (most important)
-        if (lowerText.includes('league') && (lowerText.includes('announce') || lowerText.includes('launch') || lowerText.includes('start'))) {
-          foundEvent.type = 'league';
+        if (
+          lowerText.includes("league") &&
+          (lowerText.includes("announce") ||
+            lowerText.includes("launch") ||
+            lowerText.includes("start"))
+        ) {
+          foundEvent.type = "league";
           foundEvent.title = text.trim();
           foundEvent.isLeague = true;
 
           // Try to extract date
-          const dateMatch = text.match(/(?:starts?|begins?|launches?|coming)[:\s]+(\w+\s+\d+(?:st|nd|rd|th)?,?\s*\d{4})/i);
+          const dateMatch = text.match(
+            /(?:starts?|begins?|launches?|coming)[:\s]+(\w+\s+\d+(?:st|nd|rd|th)?,?\s*\d{4})/i,
+          );
           if (dateMatch) {
             foundEvent.dateText = dateMatch[1];
           }
@@ -54,8 +95,12 @@ export async function scrapePoe2League(): Promise<WipeData> {
         }
 
         // Priority 2: Major UPDATE/EXPANSION
-        if (!foundEvent.isLeague && (lowerText.includes('expansion') || lowerText.includes('major update'))) {
-          foundEvent.type = 'update';
+        if (
+          !foundEvent.isLeague &&
+          (lowerText.includes("expansion") ||
+            lowerText.includes("major update"))
+        ) {
+          foundEvent.type = "update";
           foundEvent.title = text.trim();
           foundEvent.isEvent = true;
 
@@ -67,10 +112,14 @@ export async function scrapePoe2League(): Promise<WipeData> {
         }
 
         // Priority 3: PATCH NOTES (if no league/update found)
-        if (!foundEvent.isLeague && !foundEvent.isEvent && (lowerText.includes('patch notes') || lowerText.includes('hotfix'))) {
+        if (
+          !foundEvent.isLeague &&
+          !foundEvent.isEvent &&
+          (lowerText.includes("patch notes") || lowerText.includes("hotfix"))
+        ) {
           const versionMatch = text.match(/(\d+\.\d+\.\d+[a-z]?)/i);
           if (versionMatch) {
-            foundEvent.type = 'patch';
+            foundEvent.type = "patch";
             foundEvent.title = `Patch ${versionMatch[1]}`;
             foundEvent.isPatch = true;
 
@@ -83,9 +132,15 @@ export async function scrapePoe2League(): Promise<WipeData> {
         }
 
         // Priority 4: EVENTS (races, leagues, special events)
-        if (!foundEvent.isLeague && !foundEvent.isEvent && !foundEvent.isPatch &&
-            (lowerText.includes('event') || lowerText.includes('race') || lowerText.includes('competition'))) {
-          foundEvent.type = 'event';
+        if (
+          !foundEvent.isLeague &&
+          !foundEvent.isEvent &&
+          !foundEvent.isPatch &&
+          (lowerText.includes("event") ||
+            lowerText.includes("race") ||
+            lowerText.includes("competition"))
+        ) {
+          foundEvent.type = "event";
           foundEvent.title = text.trim();
           foundEvent.isEvent = true;
 
@@ -101,17 +156,18 @@ export async function scrapePoe2League(): Promise<WipeData> {
         eventType: foundEvent.type,
         eventTitle: foundEvent.title,
         dateText: foundEvent.dateText,
-        pageText: document.body.innerText.substring(0, 2000),
+        link: foundEvent.link,
+        pageText: (document.body.textContent || "").substring(0, 2000),
       };
     });
 
-    console.log('Scraped data:', data);
+    console.log("Scraped data:", data);
 
     const now = new Date();
     let lastEvent: Date;
     let nextEvent: Date;
-    let frequency = '';
-    let announcement = '';
+    let frequency = "";
+    let announcement = "";
     let confirmed = false;
 
     // If we found a date, try to parse it
@@ -125,30 +181,36 @@ export async function scrapePoe2League(): Promise<WipeData> {
           confirmed = true;
 
           switch (data.eventType) {
-            case 'league':
+            case "league":
               lastEvent.setDate(lastEvent.getDate() - 90);
-              frequency = 'Leagues every ~13 weeks';
-              announcement = data.eventTitle || `League starts ${data.dateText}`;
+              frequency = "Leagues every ~13 weeks";
+              announcement =
+                data.eventTitle || `League starts ${data.dateText}`;
               break;
-            case 'update':
+            case "update":
               lastEvent.setDate(lastEvent.getDate() - 30);
-              frequency = 'Major updates periodically';
-              announcement = data.eventTitle || `Update coming ${data.dateText}`;
+              frequency = "Major updates periodically";
+              announcement =
+                data.eventTitle || `Update coming ${data.dateText}`;
               break;
-            case 'event':
+            case "event":
               lastEvent.setDate(lastEvent.getDate() - 14);
-              frequency = 'Special events vary';
+              frequency = "Special events vary";
               announcement = data.eventTitle || `Event starts ${data.dateText}`;
               break;
-            case 'patch':
+            case "patch":
             default:
               lastEvent.setDate(lastEvent.getDate() - 7);
-              frequency = 'Patches every 1-2 weeks (Early Access)';
-              announcement = data.eventTitle || `Patch available ${data.dateText}`;
+              frequency = "Patches every 1-2 weeks (Early Access)";
+              announcement =
+                data.eventTitle || `Patch available ${data.dateText}`;
               break;
           }
 
-          console.log(`✅ Found confirmed ${data.eventType} date:`, nextEvent.toISOString());
+          console.log(
+            `✅ Found confirmed ${data.eventType} date:`,
+            nextEvent.toISOString(),
+          );
         } else {
           // Date is in past - this was the last event, estimate next
           lastEvent = parsedDate;
@@ -156,120 +218,129 @@ export async function scrapePoe2League(): Promise<WipeData> {
           confirmed = false;
 
           switch (data.eventType) {
-            case 'league':
+            case "league":
               nextEvent.setDate(nextEvent.getDate() + 90);
-              frequency = 'Leagues every ~13 weeks';
-              announcement = 'Next league date not yet announced';
+              frequency = "Leagues every ~13 weeks";
+              announcement = "Next league date not yet announced";
               break;
-            case 'update':
+            case "update":
               nextEvent.setDate(nextEvent.getDate() + 30);
-              frequency = 'Major updates periodically';
-              announcement = 'Next update date not yet announced';
+              frequency = "Major updates periodically";
+              announcement = "Next update date not yet announced";
               break;
-            case 'event':
+            case "event":
               nextEvent.setDate(nextEvent.getDate() + 14);
-              frequency = 'Special events vary';
-              announcement = 'Check announcements for upcoming events';
+              frequency = "Special events vary";
+              announcement = "Check announcements for upcoming events";
               break;
-            case 'patch':
+            case "patch":
             default:
               nextEvent.setDate(nextEvent.getDate() + 7);
-              frequency = 'Patches every 1-2 weeks (Early Access)';
-              announcement = data.eventTitle || 'Latest patch available - next patch coming soon';
+              frequency = "Patches every 1-2 weeks (Early Access)";
+              announcement =
+                data.eventTitle ||
+                "Latest patch available - next patch coming soon";
               break;
           }
 
-          console.log(`✅ Found last ${data.eventType}, estimating next:`, nextEvent.toISOString());
+          console.log(
+            `✅ Found last ${data.eventType}, estimating next:`,
+            nextEvent.toISOString(),
+          );
         }
       } else {
         // Couldn't parse date, use estimates
-        console.log('⚠️ Could not parse date, using estimates');
+        console.log("⚠️ Could not parse date, using estimates");
         lastEvent = new Date(now);
         nextEvent = new Date(now);
         confirmed = false;
 
         switch (data.eventType) {
-          case 'league':
+          case "league":
             lastEvent.setDate(lastEvent.getDate() - 90);
             nextEvent.setDate(nextEvent.getDate() + 90);
-            frequency = 'Leagues every ~13 weeks';
-            announcement = data.eventTitle || 'League announcement - check official site';
+            frequency = "Leagues every ~13 weeks";
+            announcement =
+              data.eventTitle || "League announcement - check official site";
             break;
-          case 'update':
+          case "update":
             lastEvent.setDate(lastEvent.getDate() - 30);
             nextEvent.setDate(nextEvent.getDate() + 30);
-            frequency = 'Major updates periodically';
-            announcement = data.eventTitle || 'Major update coming';
+            frequency = "Major updates periodically";
+            announcement = data.eventTitle || "Major update coming";
             break;
-          case 'event':
+          case "event":
             lastEvent.setDate(lastEvent.getDate() - 14);
             nextEvent.setDate(nextEvent.getDate() + 14);
-            frequency = 'Special events vary';
-            announcement = data.eventTitle || 'Special event - check announcements';
+            frequency = "Special events vary";
+            announcement =
+              data.eventTitle || "Special event - check announcements";
             break;
-          case 'patch':
+          case "patch":
           default:
             lastEvent.setDate(lastEvent.getDate() - 7);
             nextEvent.setDate(nextEvent.getDate() + 7);
-            frequency = 'Patches every 1-2 weeks (Early Access)';
-            announcement = data.eventTitle || 'Regular patches and hotfixes';
+            frequency = "Patches every 1-2 weeks (Early Access)";
+            announcement = data.eventTitle || "Regular patches and hotfixes";
             break;
         }
       }
     } else {
       // No date found, use pure estimates
-      console.log('⚠️ No date found, using estimates');
+      console.log("⚠️ No date found, using estimates");
       lastEvent = new Date(now);
       nextEvent = new Date(now);
       confirmed = false;
 
       switch (data.eventType) {
-        case 'league':
+        case "league":
           lastEvent.setDate(lastEvent.getDate() - 90);
           nextEvent.setDate(nextEvent.getDate() + 90);
-          frequency = 'Leagues every ~13 weeks';
-          announcement = data.eventTitle || 'League announcement - check official site';
+          frequency = "Leagues every ~13 weeks";
+          announcement =
+            data.eventTitle || "League announcement - check official site";
           break;
-        case 'update':
+        case "update":
           lastEvent.setDate(lastEvent.getDate() - 30);
           nextEvent.setDate(nextEvent.getDate() + 30);
-          frequency = 'Major updates periodically';
-          announcement = data.eventTitle || 'Major update coming';
+          frequency = "Major updates periodically";
+          announcement = data.eventTitle || "Major update coming";
           break;
-        case 'event':
+        case "event":
           lastEvent.setDate(lastEvent.getDate() - 14);
           nextEvent.setDate(nextEvent.getDate() + 14);
-          frequency = 'Special events vary';
-          announcement = data.eventTitle || 'Special event - check announcements';
+          frequency = "Special events vary";
+          announcement =
+            data.eventTitle || "Special event - check announcements";
           break;
-        case 'patch':
+        case "patch":
         default:
           lastEvent.setDate(lastEvent.getDate() - 7);
           nextEvent.setDate(nextEvent.getDate() + 7);
-          frequency = 'Patches every 1-2 weeks (Early Access)';
-          announcement = data.eventTitle || 'Regular patches and hotfixes';
+          frequency = "Patches every 1-2 weeks (Early Access)";
+          announcement = data.eventTitle || "Regular patches and hotfixes";
           break;
       }
     }
 
-    console.log('📅 Event Type:', data.eventType);
-    console.log('📅 Next event:', nextEvent.toISOString());
-    console.log('📅 Last event:', lastEvent.toISOString());
-    console.log('✅ Confirmed:', confirmed);
+    console.log("📅 Event Type:", data.eventType);
+    console.log("📅 Next event:", nextEvent.toISOString());
+    console.log("📅 Last event:", lastEvent.toISOString());
+    console.log("✅ Confirmed:", confirmed);
 
-    return {
-      nextWipe: nextEvent.toISOString(),
-      lastWipe: lastEvent.toISOString(),
-      frequency,
-      source: 'https://www.pathofexile.com/forum/view-forum/2212',
-      scrapedAt: new Date().toISOString(),
+    return createWipeData(
+      nextEvent,
+      lastEvent,
       confirmed,
       announcement,
-      eventType: data.eventType,
-      eventName: data.eventTitle || undefined,
-    };
+      data.eventType,
+      data.eventTitle || undefined,
+      data.link || undefined, // Use the extracted link for patchNotes
+      "https://www.pathofexile.com/forum/view-forum/2212",
+      frequency
+    );
   } catch (error) {
-    console.error('Error scraping PoE2:', error);
+    console.error("Error scraping PoE2:", error);
     throw new Error(`Failed to scrape PoE2 patch data: ${error}`);
   } finally {
     await page.close();

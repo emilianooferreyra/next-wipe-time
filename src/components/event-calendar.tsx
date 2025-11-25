@@ -42,7 +42,7 @@ export function EventCalendar({ events }: EventCalendarProps) {
   const getEventsForDay = (day: number) => {
     const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(
       2,
-      "0"
+      "0",
     )}-${String(day).padStart(2, "0")}`;
     return events.filter((event) => {
       const eventDate = event.startDate.toISOString().split("T")[0];

@@ -15,7 +15,7 @@ export default function Home() {
   const filteredGames = useGameFilters(gameData, filter);
 
   return (
-    <div className="relative min-h-screen font-sans bg-[#1a1f2e]">
+    <div className="relative min-h-screen font-sans bg-[#000000]">
       <Header />
       <GameFilters
         filter={filter}

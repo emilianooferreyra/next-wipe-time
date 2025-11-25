@@ -1,23 +1,22 @@
-import { getBrowser } from '../browser';
-import type { WipeData } from '@/schemas/wipe-data';
+import { newPage } from "../browser";
+import type { WipeData } from "@/schemas/wipe-data";
 
 export async function scrapeRustWipe(): Promise<WipeData> {
-  const browser = await getBrowser();
-  const page = await browser.newPage();
+  const page = await newPage();
 
   try {
-    console.log('📍 Navigating to rustforcewipe.com...');
+    console.log("📍 Navigating to rustforcewipe.com...");
 
     // Navigate to Rust Force Wipe
-    await page.goto('https://www.rustforcewipe.com/', {
-      waitUntil: 'domcontentloaded',
+    await page.goto("https://www.rustforcewipe.com/", {
+      waitUntil: "domcontentloaded",
       timeout: 30000,
     });
 
-    console.log('✅ Page loaded, waiting for content...');
+    console.log("✅ Page loaded, waiting for content...");
 
     // Wait a bit for any dynamic content
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // Take a screenshot for debugging (optional)
     // await page.screenshot({ path: 'debug-rust.png' });
@@ -26,17 +25,17 @@ export async function scrapeRustWipe(): Promise<WipeData> {
     const data = await page.evaluate(() => {
       // Get all the page HTML for inspection
       const html = document.body.innerHTML;
-      const text = document.body.innerText;
+      const text = document.body.textContent || "";
 
       // Try to find any countdown-related elements
       const possibleSelectors = [
-        '.countdown',
-        '#countdown',
+        ".countdown",
+        "#countdown",
         '[class*="countdown"]',
         '[id*="countdown"]',
         '[class*="timer"]',
         '[id*="timer"]',
-        'time',
+        "time",
       ];
 
       let foundElement = null;
@@ -56,11 +55,11 @@ export async function scrapeRustWipe(): Promise<WipeData> {
         foundSelector,
         title: document.title,
         textPreview: text.substring(0, 1000), // First 1000 chars
-        hasScript: html.includes('countdown') || html.includes('timer'),
+        hasScript: html.includes("countdown") || html.includes("timer"),
       };
     });
 
-    console.log('📊 Scraped data:', JSON.stringify(data, null, 2));
+    console.log("📊 Scraped data:", JSON.stringify(data, null, 2));
 
     // For now, calculate based on known pattern since scraping the site might be complex
     // Rust official servers wipe first Thursday of each month at 19:00 UTC
@@ -92,26 +91,61 @@ export async function scrapeRustWipe(): Promise<WipeData> {
 
     // Calculate last wipe (previous month's first Thursday)
     const lastWipeMonth = nextWipe.getMonth() - 1;
-    const lastWipeYear = lastWipeMonth < 0 ? nextWipe.getFullYear() - 1 : nextWipe.getFullYear();
-    const lastWipe = new Date(lastWipeYear, lastWipeMonth < 0 ? 11 : lastWipeMonth, 1);
+    const lastWipeYear =
+      lastWipeMonth < 0 ? nextWipe.getFullYear() - 1 : nextWipe.getFullYear();
+    const lastWipe = new Date(
+      lastWipeYear,
+      lastWipeMonth < 0 ? 11 : lastWipeMonth,
+      1,
+    );
     while (lastWipe.getDay() !== 4) {
       lastWipe.setDate(lastWipe.getDate() + 1);
     }
     lastWipe.setUTCHours(19, 0, 0, 0);
 
-    console.log('📅 Next wipe:', nextWipe.toISOString());
-    console.log('📅 Last wipe:', lastWipe.toISOString());
+    // Scrape for the latest blog post for patch notes
+    let patchNotes: string | undefined;
+    let announcement: string | undefined;
+    try {
+      console.log("📍 Navigating to rust.facepunch.com/news...");
+      await page.goto("https://rust.facepunch.com/news/", {
+        waitUntil: "domcontentloaded",
+      });
+      const latestNews = await page.evaluate(() => {
+        const article = document.querySelector(
+          'a[href^="/news/"][class*="link"]',
+        );
+        if (article) {
+          const link = (article as HTMLAnchorElement).href;
+          const title =
+            article.querySelector('[class*="title"]')?.textContent?.trim() ||
+            "Latest News";
+          return { link, title };
+        }
+        return null;
+      });
+
+      if (latestNews) {
+        patchNotes = latestNews.link;
+        announcement = latestNews.title;
+        console.log("✅ Found latest news:", announcement);
+      }
+    } catch (e) {
+      console.error("⚠️  Could not scrape patch notes for Rust:", e);
+    }
 
     return {
       nextWipe: nextWipe.toISOString(),
       lastWipe: lastWipe.toISOString(),
-      frequency: 'Monthly (First Thursday at 7PM UTC)',
-      source: 'rustforcewipe.com (calculated)',
+      frequency: "Monthly (First Thursday at 7PM UTC)",
+      source: "Facepunch (Official Schedule)",
       scrapedAt: new Date().toISOString(),
       confirmed: true, // Force wipes are always confirmed (monthly schedule)
+      patchNotes,
+      announcement,
     };
   } catch (error) {
-    console.error('❌ Error scraping Rust wipe:', error);
+    console.error("❌ Error scraping Rust wipe:", error);
     throw new Error(`Failed to scrape Rust wipe data: ${error}`);
   } finally {
     await page.close();

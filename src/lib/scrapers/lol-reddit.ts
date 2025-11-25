@@ -1,4 +1,5 @@
-import type { WipeData } from '@/schemas/wipe-data';
+import { newPage } from "../browser";
+import type { WipeData } from "@/schemas/wipe-data";
 
 /**
  * Scrape League of Legends season information from Reddit and community sources
@@ -8,47 +9,131 @@ import type { WipeData } from '@/schemas/wipe-data';
  */
 export async function scrapeLoLSeasons(): Promise<WipeData> {
   try {
-    console.log('📍 Fetching LoL season info...');
+    console.log("📍 Fetching LoL season info...");
 
-    // Try Reddit first
+    // Try Official News first
+    const officialData = await scrapeOfficialNews();
+    if (officialData) {
+      return officialData;
+    }
+
+    // Try Reddit as backup
     const redditData = await scrapeReddit();
     if (redditData) {
       return redditData;
     }
 
-    // Try Fandom Wiki
-    const fandomData = await scrapeFandom();
-    if (fandomData) {
-      return fandomData;
-    }
-
     // Fallback to known schedule
     return getFallbackSchedule();
-
   } catch (error) {
-    console.error('❌ Error scraping LoL:', error);
+    console.error("❌ Error scraping LoL:", error);
     throw new Error(`Failed to scrape LoL: ${error}`);
   }
 }
 
+async function scrapeOfficialNews(): Promise<WipeData | null> {
+  const page = await newPage();
+  try {
+    console.log("🔍 Checking LoL Official News...");
+    await page.goto("https://www.leagueoflegends.com/en-us/news/game-updates/", {
+      waitUntil: "domcontentloaded",
+    });
+
+    const articleData = await page.evaluate(() => {
+      const articles = document.querySelectorAll("article");
+      for (const article of articles) {
+        const titleElement = article.querySelector("h2");
+        const title = titleElement?.textContent?.trim() || "";
+        const lowerTitle = title.toLowerCase();
+
+        if (lowerTitle.includes("season") || lowerTitle.includes("split")) {
+          const linkElement = article.querySelector("a");
+          const link = linkElement?.href;
+          const fullText = article.textContent?.toLowerCase() || "";
+          
+          const dateMatch = fullText.match(
+            /(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})/i,
+          );
+
+          if (dateMatch) {
+            return {
+              title,
+              link,
+              dateText: `${dateMatch[1]} ${dateMatch[2]}`,
+            };
+          }
+        }
+      }
+      return null;
+    });
+
+    if (articleData) {
+      const { title, link, dateText } = articleData;
+      const potentialDate = new Date(`${dateText}, ${new Date().getFullYear()}`);
+
+      if (potentialDate > new Date()) {
+        potentialDate.setUTCHours(19, 0, 0, 0); // LoL splits start at 12 PM PT
+        const lastSplit = new Date(potentialDate);
+        lastSplit.setMonth(lastSplit.getMonth() - 4);
+
+        return {
+          nextWipe: potentialDate.toISOString(),
+          lastWipe: lastSplit.toISOString(),
+          frequency: "Every ~4 months (3 splits per year)",
+          source: "leagueoflegends.com (Official)",
+          scrapedAt: new Date().toISOString(),
+          confirmed: true,
+          announcement: title,
+          patchNotes: link,
+        };
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error("❌ Error scraping LoL News:", error);
+    return null;
+  } finally {
+    await page.close();
+  }
+}
+
+
 async function scrapeReddit(): Promise<WipeData | null> {
   try {
-    const { scrapeRedditPosts, searchPosts, extractDatesFromPost } = await import('@/lib/reddit-scraper');
+    const { scrapeRedditPosts, searchPosts, extractDatesFromPost } =
+      await import("@/lib/reddit-scraper");
 
-    const posts = await scrapeRedditPosts('leagueoflegends', {
+    const posts = await scrapeRedditPosts("leagueoflegends", {
       limit: 50,
-      sort: 'new'
+      sort: "new",
     });
 
     if (posts.length === 0) {
-      console.log('⚠️  No posts found in r/leagueoflegends');
+      console.log("⚠️  No posts found in r/leagueoflegends");
       return null;
     }
 
     const seasonPosts = searchPosts(
       posts,
-      ['season 2025', 'season 2026', 'split 1', 'split 2', 'split 3', 'new season', 'ranked season'],
-      ['discussion', 'question', 'help', 'esports', 'lcs', 'lec', 'lck', 'tournament']
+      [
+        "season 2025",
+        "season 2026",
+        "split 1",
+        "split 2",
+        "split 3",
+        "new season",
+        "ranked season",
+      ],
+      [
+        "discussion",
+        "question",
+        "help",
+        "esports",
+        "lcs",
+        "lec",
+        "lck",
+        "tournament",
+      ],
     );
 
     console.log(`🔍 Found ${seasonPosts.length} season-related posts`);
@@ -57,11 +142,12 @@ async function scrapeReddit(): Promise<WipeData | null> {
       const dates = extractDatesFromPost(post);
 
       if (dates.length > 0) {
-        const futureDate = dates.find(d => d > new Date());
+        const futureDate = dates.find((d) => d > new Date());
 
         if (futureDate) {
           const now = new Date();
-          const daysUntil = (futureDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+          const daysUntil =
+            (futureDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
 
           if (daysUntil >= 7 && daysUntil <= 150) {
             const lastSplit = new Date(futureDate);
@@ -69,38 +155,52 @@ async function scrapeReddit(): Promise<WipeData | null> {
 
             console.log(`✅ Found season date in post: "${post.title}"`);
 
+            // Extract patch notes from post body
+            let patchNotes: string | undefined;
+            const officialLinkRegex = /https?:\/\/(?:www\.)?(leagueoflegends\.com)[\w\/\-\.]+/g;
+            const links = post.selftext.match(officialLinkRegex);
+
+            if (links && links.length > 0) {
+              patchNotes = links[0];
+            } else if (post.selftext) {
+              patchNotes = `${post.selftext.substring(0, 300)}...`;
+            }
+
             return {
               nextWipe: futureDate.toISOString(),
               lastWipe: lastSplit.toISOString(),
-              frequency: 'Every ~4 months (3 splits per year)',
-              source: 'r/leagueoflegends',
+              frequency: "Every ~4 months (3 splits per year)",
+              source: "r/leagueoflegends",
               scrapedAt: new Date().toISOString(),
               confirmed: true,
               announcement: post.title,
+              patchNotes,
             };
           }
         }
       }
     }
 
-    console.log('⚠️  No season announcement found on Reddit');
+    console.log("⚠️  No season announcement found on Reddit");
     return null;
-
   } catch (error) {
-    console.error('❌ Error with Reddit:', error);
+    console.error("❌ Error with Reddit:", error);
     return null;
   }
 }
 
 async function scrapeFandom(): Promise<WipeData | null> {
   try {
-    console.log('🔍 Checking LoL Fandom Wiki...');
+    console.log("🔍 Checking LoL Fandom Wiki...");
 
-    const response = await fetch('https://leagueoflegends.fandom.com/wiki/Season', {
-      headers: {
-        'User-Agent': 'NextWipeTime/1.0 (Season Tracker)',
+    const response = await fetch(
+      "https://leagueoflegends.fandom.com/wiki/Season",
+      {
+        headers: {
+          "User-Agent": "NextWipeTime/1.0 (Season Tracker)",
+        },
       },
-    });
+    );
 
     if (!response.ok) {
       console.log(`⚠️  Fandom returned ${response.status}`);
@@ -111,18 +211,25 @@ async function scrapeFandom(): Promise<WipeData | null> {
     console.log(`✅ Fetched Fandom Wiki (${html.length} bytes)`);
 
     // Look for season and split dates
-    const seasonPatterns = [
-      /Season\s+(\d{4})/gi,
-      /Split\s+(\d+)/gi,
-    ];
+    const seasonPatterns = [/Season\s+(\d{4})/gi, /Split\s+(\d+)/gi];
 
     const datePatterns = [
       /(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s*(\d{4}))?/gi,
     ];
 
     const monthMap: Record<string, number> = {
-      january: 0, february: 1, march: 2, april: 3, may: 4, june: 5,
-      july: 6, august: 7, september: 8, october: 9, november: 10, december: 11,
+      january: 0,
+      february: 1,
+      march: 2,
+      april: 3,
+      may: 4,
+      june: 5,
+      july: 6,
+      august: 7,
+      september: 8,
+      october: 9,
+      november: 10,
+      december: 11,
     };
 
     // Extract all future dates
@@ -155,24 +262,23 @@ async function scrapeFandom(): Promise<WipeData | null> {
       return {
         nextWipe: nextDate.toISOString(),
         lastWipe: lastSplit.toISOString(),
-        frequency: 'Every ~4 months (3 splits per year)',
-        source: 'leagueoflegends.fandom.com',
+        frequency: "Every ~4 months (3 splits per year)",
+        source: "leagueoflegends.fandom.com",
         scrapedAt: new Date().toISOString(),
         confirmed: true,
       };
     }
 
-    console.log('⚠️  No valid dates found in Fandom');
+    console.log("⚠️  No valid dates found in Fandom");
     return null;
-
   } catch (error) {
-    console.error('❌ Error with Fandom:', error);
+    console.error("❌ Error with Fandom:", error);
     return null;
   }
 }
 
 function getFallbackSchedule(): WipeData {
-  console.log('⚠️  Using fallback schedule for LoL');
+  console.log("⚠️  Using fallback schedule for LoL");
 
   // Known: Season 2025 started January 2025
   // Splits are ~4 months each: Jan-Apr, May-Aug, Sep-Dec
@@ -181,13 +287,13 @@ function getFallbackSchedule(): WipeData {
 
   // Define split start dates (approximate)
   const splits = [
-    new Date(Date.UTC(year, 0, 10, 19, 0, 0)),  // Split 1: ~Jan 10
-    new Date(Date.UTC(year, 4, 15, 19, 0, 0)),  // Split 2: ~May 15
-    new Date(Date.UTC(year, 8, 20, 19, 0, 0)),  // Split 3: ~Sep 20
+    new Date(Date.UTC(year, 0, 10, 19, 0, 0)), // Split 1: ~Jan 10
+    new Date(Date.UTC(year, 4, 15, 19, 0, 0)), // Split 2: ~May 15
+    new Date(Date.UTC(year, 8, 20, 19, 0, 0)), // Split 3: ~Sep 20
   ];
 
   // Find next split
-  let nextSplit = splits.find(split => split > now);
+  let nextSplit = splits.find((split) => split > now);
 
   // If no split found this year, use next year's Split 1
   if (!nextSplit) {
@@ -200,11 +306,11 @@ function getFallbackSchedule(): WipeData {
   return {
     nextWipe: nextSplit.toISOString(),
     lastWipe: lastSplit.toISOString(),
-    frequency: 'Every ~4 months (3 splits per year)',
-    source: 'Based on typical LoL split schedule',
+    frequency: "Every ~4 months (3 splits per year)",
+    source: "Based on typical LoL split schedule",
     scrapedAt: new Date().toISOString(),
     confirmed: false,
-    announcement: 'Estimated based on typical split schedule',
+    announcement: "Estimated based on typical split schedule",
   };
 }
 
@@ -213,13 +319,33 @@ function extractDatesFromText(text: string): {
 } {
   let seasonDate: Date | null = null;
 
-  const monthDayPattern = /(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s*(\d{4}))?/gi;
+  const monthDayPattern =
+    /(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s*(\d{4}))?/gi;
 
   const monthMap: Record<string, number> = {
-    january: 0, jan: 0, february: 1, feb: 1, march: 2, mar: 2,
-    april: 3, apr: 3, may: 4, june: 5, jun: 5, july: 6, jul: 6,
-    august: 7, aug: 7, september: 8, sep: 8, october: 9, oct: 9,
-    november: 10, nov: 10, december: 11, dec: 11,
+    january: 0,
+    jan: 0,
+    february: 1,
+    feb: 1,
+    march: 2,
+    mar: 2,
+    april: 3,
+    apr: 3,
+    may: 4,
+    june: 5,
+    jun: 5,
+    july: 6,
+    jul: 6,
+    august: 7,
+    aug: 7,
+    september: 8,
+    sep: 8,
+    october: 9,
+    oct: 9,
+    november: 10,
+    nov: 10,
+    december: 11,
+    dec: 11,
   };
 
   const matches = text.matchAll(monthDayPattern);

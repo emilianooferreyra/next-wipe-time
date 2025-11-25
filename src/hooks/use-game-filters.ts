@@ -4,7 +4,7 @@ import type { GameDataMap, FilterType, Game } from "@/types/game";
 
 export function useGameFilters(
   gameData: GameDataMap,
-  filter: FilterType
+  filter: FilterType,
 ): Game[] {
   return useMemo(() => {
     return games

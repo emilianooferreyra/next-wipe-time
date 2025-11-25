@@ -1,4 +1,4 @@
-import type { WipeData } from '@/schemas/wipe-data';
+import type { WipeData } from "@/schemas/wipe-data";
 
 /**
  * Scrape Last Epoch cycle information from official forums
@@ -8,7 +8,7 @@ import type { WipeData } from '@/schemas/wipe-data';
  */
 export async function scrapeLastEpochCycles(): Promise<WipeData> {
   try {
-    console.log('📍 Fetching Last Epoch cycle info...');
+    console.log("📍 Fetching Last Epoch cycle info...");
 
     // Try multiple sources in order of reliability
 
@@ -32,22 +32,21 @@ export async function scrapeLastEpochCycles(): Promise<WipeData> {
 
     // 4. Fallback to known schedule
     return getFallbackSchedule();
-
   } catch (error) {
-    console.error('❌ Error scraping Last Epoch:', error);
+    console.error("❌ Error scraping Last Epoch:", error);
     throw new Error(`Failed to scrape Last Epoch: ${error}`);
   }
 }
 
 async function scrapeForumAnnouncements(): Promise<WipeData | null> {
   try {
-    console.log('🔍 Checking Last Epoch forums...');
+    console.log("🔍 Checking Last Epoch forums...");
 
-    const forumUrl = 'https://forum.lastepoch.com/c/announcements/37.json';
+    const forumUrl = "https://forum.lastepoch.com/c/announcements/37.json";
 
     const response = await fetch(forumUrl, {
       headers: {
-        'User-Agent': 'NextWipeTime/1.0 (Cycle Tracker)',
+        "User-Agent": "NextWipeTime/1.0 (Cycle Tracker)",
       },
     });
 
@@ -61,45 +60,47 @@ async function scrapeForumAnnouncements(): Promise<WipeData | null> {
 
     // Look for cycle announcements
     const cycleKeywords = [
-      'cycle',
-      'season',
-      'patch',
-      'harbingers',
-      'reset',
-      'new content'
+      "cycle",
+      "season",
+      "patch",
+      "harbingers",
+      "reset",
+      "new content",
     ];
 
     const excludeKeywords = [
-      'poll',
-      'survey',
-      'hotfix',
-      'bugfix',
-      'maintenance'
+      "poll",
+      "survey",
+      "hotfix",
+      "bugfix",
+      "maintenance",
     ];
 
     if (data.topic_list?.topics) {
       for (const topic of data.topic_list.topics) {
-        const title = topic.title?.toLowerCase() || '';
+        const title = topic.title?.toLowerCase() || "";
 
         // Skip excluded topics
-        const isExcluded = excludeKeywords.some(k => title.includes(k));
+        const isExcluded = excludeKeywords.some((k) => title.includes(k));
         if (isExcluded) {
-          console.log('⏭️  Skipping non-cycle post:', topic.title);
+          console.log("⏭️  Skipping non-cycle post:", topic.title);
           continue;
         }
 
         // Check for cycle keywords
-        const hasCycleKeyword = cycleKeywords.some(k => title.includes(k));
+        const hasCycleKeyword = cycleKeywords.some((k) => title.includes(k));
 
         if (hasCycleKeyword) {
-          console.log('🎯 Found potential cycle announcement:', topic.title);
+          console.log("🎯 Found potential cycle announcement:", topic.title);
 
           // Try to extract dates from title
           const dates = extractDatesFromText(topic.title);
 
           if (dates.cycleDate) {
             const now = new Date();
-            const daysUntilCycle = (dates.cycleDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+            const daysUntilCycle =
+              (dates.cycleDate.getTime() - now.getTime()) /
+              (1000 * 60 * 60 * 24);
 
             // Validate: Cycles need at least 7 days notice
             if (daysUntilCycle >= 7 && daysUntilCycle <= 180) {
@@ -109,11 +110,12 @@ async function scrapeForumAnnouncements(): Promise<WipeData | null> {
               return {
                 nextWipe: dates.cycleDate.toISOString(),
                 lastWipe: lastCycleDate.toISOString(),
-                frequency: 'Every 3-4 months (Cycles)',
-                source: 'forum.lastepoch.com (Official)',
+                frequency: "Every 3-4 months (Cycles)",
+                source: "forum.lastepoch.com (Official)",
                 scrapedAt: new Date().toISOString(),
                 confirmed: true,
                 announcement: topic.title,
+                patchNotes: `https://forum.lastepoch.com/t/${topic.slug}/${topic.id}`,
               };
             }
           }
@@ -124,7 +126,8 @@ async function scrapeForumAnnouncements(): Promise<WipeData | null> {
             const now = new Date();
 
             // If this is a recent announcement (within last 7 days)
-            const daysSincePost = (now.getTime() - topicDate.getTime()) / (1000 * 60 * 60 * 24);
+            const daysSincePost =
+              (now.getTime() - topicDate.getTime()) / (1000 * 60 * 60 * 24);
 
             if (daysSincePost <= 7) {
               // This might be an announcement for an upcoming cycle
@@ -139,11 +142,13 @@ async function scrapeForumAnnouncements(): Promise<WipeData | null> {
                 return {
                   nextWipe: estimatedCycleStart.toISOString(),
                   lastWipe: lastCycle.toISOString(),
-                  frequency: 'Every 3-4 months (Cycles)',
-                  source: 'forum.lastepoch.com (Estimated from recent announcement)',
+                  frequency: "Every 3-4 months (Cycles)",
+                  source:
+                    "forum.lastepoch.com (Estimated from recent announcement)",
                   scrapedAt: new Date().toISOString(),
                   confirmed: false,
                   announcement: topic.title,
+                  patchNotes: `https://forum.lastepoch.com/t/${topic.slug}/${topic.id}`,
                 };
               }
             }
@@ -152,17 +157,16 @@ async function scrapeForumAnnouncements(): Promise<WipeData | null> {
       }
     }
 
-    console.log('⚠️  No cycle announcement found in forums');
+    console.log("⚠️  No cycle announcement found in forums");
     return null;
-
   } catch (error) {
-    console.error('❌ Error with forum:', error);
+    console.error("❌ Error with forum:", error);
     return null;
   }
 }
 
 function getFallbackSchedule(): WipeData {
-  console.log('⚠️  Using fallback schedule for Last Epoch');
+  console.log("⚠️  Using fallback schedule for Last Epoch");
 
   // Known recent cycles:
   // - Cycle 1.1 (Season 2): May 2024
@@ -170,32 +174,33 @@ function getFallbackSchedule(): WipeData {
   // - Season 3 extended to Q1 2025 (January-March 2025)
   // - Typical cycle duration: 3-4 months (irregular, devs prioritizing quality over strict schedules)
 
-  const lastKnownCycle = new Date('2024-08-21T17:00:00Z'); // Cycle 1.2 Harbingers of Ruin (Season 3)
+  const lastKnownCycle = new Date("2024-08-21T17:00:00Z"); // Cycle 1.2 Harbingers of Ruin (Season 3)
 
   // Season 3 extended to Q1 2025 - estimate mid-February 2025 for next cycle
   // Using February 15, 2025 as estimated next cycle (Q1 2025 midpoint)
-  const estimatedNextCycle = new Date('2025-02-15T17:00:00Z'); // Q1 2025 estimate
+  const estimatedNextCycle = new Date("2025-02-15T17:00:00Z"); // Q1 2025 estimate
 
   return {
     nextWipe: estimatedNextCycle.toISOString(),
     lastWipe: lastKnownCycle.toISOString(),
-    frequency: 'Every 3-4 months (Cycles)',
-    source: 'Estimated based on Season 3 extension to Q1 2025',
+    frequency: "Every 3-4 months (Cycles)",
+    source: "Estimated based on Season 3 extension to Q1 2025",
     scrapedAt: new Date().toISOString(),
     confirmed: false,
-    announcement: 'Season 3 (Harbingers of Ruin) extended to Q1 2025. Next cycle expected mid-February 2025. Last Epoch announces new cycles 1-2 weeks in advance. Devs prioritize quality updates over strict schedules. Check forum.lastepoch.com, r/LastEpoch, or Steam for official announcements.',
+    announcement:
+      "Season 3 (Harbingers of Ruin) extended to Q1 2025. Next cycle expected mid-February 2025. Last Epoch announces new cycles 1-2 weeks in advance. Devs prioritize quality updates over strict schedules. Check forum.lastepoch.com, r/LastEpoch, or Steam for official announcements.",
   };
 }
 
 async function scrapeRedditAnnouncements(): Promise<WipeData | null> {
   try {
-    console.log('🔍 Checking Reddit r/LastEpoch...');
+    console.log("🔍 Checking Reddit r/LastEpoch...");
 
-    const redditUrl = 'https://www.reddit.com/r/LastEpoch/hot.json?limit=25';
+    const redditUrl = "https://www.reddit.com/r/LastEpoch/hot.json?limit=25";
 
     const response = await fetch(redditUrl, {
       headers: {
-        'User-Agent': 'NextWipeTime/1.0 (Cycle Tracker)',
+        "User-Agent": "NextWipeTime/1.0 (Cycle Tracker)",
       },
     });
 
@@ -208,28 +213,39 @@ async function scrapeRedditAnnouncements(): Promise<WipeData | null> {
     const posts = data.data?.children || [];
     console.log(`✅ Found ${posts.length} Reddit posts`);
 
-    const cycleKeywords = ['cycle', 'season', 'new cycle', 'next cycle', 'patch', 'update'];
-    const excludeKeywords = ['poll', 'survey', 'bug', 'build', 'help'];
+    const cycleKeywords = [
+      "cycle",
+      "season",
+      "new cycle",
+      "next cycle",
+      "patch",
+      "update",
+    ];
+    const excludeKeywords = ["poll", "survey", "bug", "build", "help"];
 
     for (const post of posts) {
-      const title = post.data.title?.toLowerCase() || '';
-      const selftext = post.data.selftext?.toLowerCase() || '';
+      const title = post.data.title?.toLowerCase() || "";
+      const selftext = post.data.selftext?.toLowerCase() || "";
       const fullText = `${title} ${selftext}`;
 
       // Skip excluded posts
-      const isExcluded = excludeKeywords.some(k => fullText.includes(k));
+      const isExcluded = excludeKeywords.some((k) => fullText.includes(k));
       if (isExcluded) continue;
 
       // Check for cycle keywords
-      const hasCycleKeyword = cycleKeywords.some(k => fullText.includes(k));
+      const hasCycleKeyword = cycleKeywords.some((k) => fullText.includes(k));
 
-      if (hasCycleKeyword && post.data.link_flair_text?.toLowerCase().includes('news')) {
-        console.log('🎯 Found potential cycle announcement on Reddit:', title);
+      if (
+        hasCycleKeyword &&
+        post.data.link_flair_text?.toLowerCase().includes("news")
+      ) {
+        console.log("🎯 Found potential cycle announcement on Reddit:", title);
 
         const dates = extractDatesFromText(fullText);
         if (dates.cycleDate) {
           const now = new Date();
-          const daysUntilCycle = (dates.cycleDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+          const daysUntilCycle =
+            (dates.cycleDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
 
           if (daysUntilCycle >= 1 && daysUntilCycle <= 180) {
             const lastCycleDate = new Date(dates.cycleDate);
@@ -238,36 +254,37 @@ async function scrapeRedditAnnouncements(): Promise<WipeData | null> {
             return {
               nextWipe: dates.cycleDate.toISOString(),
               lastWipe: lastCycleDate.toISOString(),
-              frequency: 'Every 3-4 months (Cycles)',
-              source: 'Reddit r/LastEpoch',
+              frequency: "Every 3-4 months (Cycles)",
+              source: "Reddit r/LastEpoch",
               scrapedAt: new Date().toISOString(),
               confirmed: true,
               announcement: post.data.title,
+              patchNotes: post.data.url, // Reddit post URL as patch notes link
             };
           }
         }
       }
     }
 
-    console.log('⚠️  No cycle announcement found on Reddit');
+    console.log("⚠️  No cycle announcement found on Reddit");
     return null;
-
   } catch (error) {
-    console.error('❌ Error with Reddit:', error);
+    console.error("❌ Error with Reddit:", error);
     return null;
   }
 }
 
 async function scrapeSteamNews(): Promise<WipeData | null> {
   try {
-    console.log('🔍 Checking Steam news...');
+    console.log("🔍 Checking Steam news...");
 
     // Last Epoch App ID: 899770
-    const steamUrl = 'https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=899770&count=10&format=json';
+    const steamUrl =
+      "https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=899770&count=10&format=json";
 
     const response = await fetch(steamUrl, {
       headers: {
-        'User-Agent': 'NextWipeTime/1.0 (Cycle Tracker)',
+        "User-Agent": "NextWipeTime/1.0 (Cycle Tracker)",
       },
     });
 
@@ -280,22 +297,32 @@ async function scrapeSteamNews(): Promise<WipeData | null> {
     const newsItems = data.appnews?.newsitems || [];
     console.log(`✅ Found ${newsItems.length} Steam news items`);
 
-    const cycleKeywords = ['cycle', 'season', 'new content', 'major update', 'harbingers'];
+    const cycleKeywords = [
+      "cycle",
+      "season",
+      "new content",
+      "major update",
+      "harbingers",
+    ];
 
     for (const item of newsItems) {
-      const title = item.title?.toLowerCase() || '';
-      const contents = item.contents?.toLowerCase() || '';
+      const title = item.title?.toLowerCase() || "";
+      const contents = item.contents?.toLowerCase() || "";
       const fullText = `${title} ${contents}`;
 
-      const hasCycleKeyword = cycleKeywords.some(k => fullText.includes(k));
+      const hasCycleKeyword = cycleKeywords.some((k) => fullText.includes(k));
 
       if (hasCycleKeyword) {
-        console.log('🎯 Found potential cycle announcement on Steam:', item.title);
+        console.log(
+          "🎯 Found potential cycle announcement on Steam:",
+          item.title,
+        );
 
         const dates = extractDatesFromText(fullText);
         if (dates.cycleDate) {
           const now = new Date();
-          const daysUntilCycle = (dates.cycleDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+          const daysUntilCycle =
+            (dates.cycleDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
 
           if (daysUntilCycle >= 1 && daysUntilCycle <= 180) {
             const lastCycleDate = new Date(dates.cycleDate);
@@ -304,22 +331,22 @@ async function scrapeSteamNews(): Promise<WipeData | null> {
             return {
               nextWipe: dates.cycleDate.toISOString(),
               lastWipe: lastCycleDate.toISOString(),
-              frequency: 'Every 3-4 months (Cycles)',
-              source: 'Steam News (Official)',
+              frequency: "Every 3-4 months (Cycles)",
+              source: "Steam News (Official)",
               scrapedAt: new Date().toISOString(),
               confirmed: true,
               announcement: item.title,
+              patchNotes: item.url,
             };
           }
         }
       }
     }
 
-    console.log('⚠️  No cycle announcement found on Steam');
+    console.log("⚠️  No cycle announcement found on Steam");
     return null;
-
   } catch (error) {
-    console.error('❌ Error with Steam:', error);
+    console.error("❌ Error with Steam:", error);
     return null;
   }
 }
@@ -330,13 +357,33 @@ function extractDatesFromText(text: string): {
   let cycleDate: Date | null = null;
 
   // Month + day pattern
-  const monthDayPattern = /(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s*(\d{4}))?/gi;
+  const monthDayPattern =
+    /(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s*(\d{4}))?/gi;
 
   const monthMap: Record<string, number> = {
-    january: 0, jan: 0, february: 1, feb: 1, march: 2, mar: 2,
-    april: 3, apr: 3, may: 4, june: 5, jun: 5, july: 6, jul: 6,
-    august: 7, aug: 7, september: 8, sep: 8, october: 9, oct: 9,
-    november: 10, nov: 10, december: 11, dec: 11,
+    january: 0,
+    jan: 0,
+    february: 1,
+    feb: 1,
+    march: 2,
+    mar: 2,
+    april: 3,
+    apr: 3,
+    may: 4,
+    june: 5,
+    jun: 5,
+    july: 6,
+    jul: 6,
+    august: 7,
+    aug: 7,
+    september: 8,
+    sep: 8,
+    october: 9,
+    oct: 9,
+    november: 10,
+    nov: 10,
+    december: 11,
+    dec: 11,
   };
 
   const matches = text.matchAll(monthDayPattern);

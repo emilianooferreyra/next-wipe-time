@@ -25,16 +25,18 @@ export function useGameQueries() {
 
   const gameData: GameDataMap = useMemo(
     () =>
-      Object.fromEntries(games.map((game, i) => [game.id, gameQueries[i].data])),
-    [gameQueries]
+      Object.fromEntries(
+        games.map((game, i) => [game.id, gameQueries[i].data]),
+      ),
+    [gameQueries],
   );
 
   const loading: LoadingMap = useMemo(
     () =>
       Object.fromEntries(
-        games.map((game, i) => [game.id, gameQueries[i].isLoading])
+        games.map((game, i) => [game.id, gameQueries[i].isLoading]),
       ),
-    [gameQueries]
+    [gameQueries],
   );
 
   return { gameData, loading };

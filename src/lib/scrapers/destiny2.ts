@@ -1,54 +1,83 @@
-import { getBrowser } from '../browser';
-import type { WipeData } from '@/schemas/wipe-data';
+import { newPage } from "../browser";
+import type { WipeData } from "@/schemas/wipe-data";
 
 export async function scrapeDestiny2Season(): Promise<WipeData> {
-  const browser = await getBrowser();
-  const page = await browser.newPage();
-
+  const page = await newPage();
   try {
-    console.log('📍 Navigating to Bungie news...');
-
-    await page.goto('https://www.bungie.net/7/en/Seasons/SeasonOfTheWish', {
-      waitUntil: 'domcontentloaded',
-      timeout: 30000,
+    console.log("📍 Navigating to Bungie news for Destiny 2...");
+    await page.goto("https://www.bungie.net/en/explore/category/news", {
+      waitUntil: "domcontentloaded",
     });
 
-    console.log('✅ Page loaded, waiting for content...');
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    const articleData = await page.evaluate(() => {
+      const articles = document.querySelectorAll("a[href*='/news/article/']");
+      for (const article of articles) {
+        const titleElement = article.querySelector("div[class*='-title']");
+        const title = titleElement?.textContent?.trim() || "";
+        const lowerTitle = title.toLowerCase();
 
-    const data = await page.evaluate(() => {
-      const bodyText = document.body.innerText;
+        if (lowerTitle.includes("season") && (lowerTitle.includes("release") || lowerTitle.includes("launch"))) {
+          const link = (article as HTMLAnchorElement).href;
+          const fullText = article.textContent?.toLowerCase() || "";
+          
+          const dateMatch = fullText.match(
+            /(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})/i,
+          );
 
-      // Look for season timer or countdown
-      const timerElements = Array.from(document.querySelectorAll('[class*="timer"], [class*="countdown"], [class*="season"]'));
-
-      return {
-        pageText: bodyText.substring(0, 2000),
-        timerText: timerElements.map(el => el.textContent).join(' | '),
-      };
+          if (dateMatch) {
+            return {
+              title,
+              link,
+              dateText: `${dateMatch[1]} ${dateMatch[2]}`,
+            };
+          }
+        }
+      }
+      return null;
     });
 
-    console.log('Scraped data:', data);
+    if (articleData) {
+      const { title, link, dateText } = articleData;
+      const potentialDate = new Date(`${dateText}, ${new Date().getFullYear()}`);
 
-    // Destiny 2 seasons typically last ~3 months
+      if (potentialDate > new Date()) {
+        potentialDate.setUTCHours(17, 0, 0, 0); // Destiny resets are at 10 AM PT
+        const lastSeason = new Date(potentialDate);
+        lastSeason.setMonth(lastSeason.getMonth() - 3);
+
+        return {
+          nextWipe: potentialDate.toISOString(),
+          lastWipe: lastSeason.toISOString(),
+          frequency: "Every ~3 months",
+          source: "Bungie News (Official)",
+          scrapedAt: new Date().toISOString(),
+          confirmed: true,
+          announcement: title,
+          patchNotes: link,
+        };
+      }
+    }
+
+    // Fallback if no specific date is found
+    console.log("⚠️ No specific date found, using estimation.");
     const now = new Date();
     const lastWipe = new Date(now);
-    lastWipe.setDate(lastWipe.getDate() - 45); // Estimate
-
+    lastWipe.setDate(lastWipe.getDate() - 45);
     const nextWipe = new Date(now);
-    nextWipe.setDate(nextWipe.getDate() + 45); // Estimate next season in ~45 days
+    nextWipe.setDate(nextWipe.getDate() + 45);
 
     return {
       nextWipe: nextWipe.toISOString(),
       lastWipe: lastWipe.toISOString(),
-      frequency: 'Every ~3 months',
-      source: 'https://www.bungie.net/',
+      frequency: "Every ~3 months",
+      source: "Bungie News (Estimated)",
       scrapedAt: new Date().toISOString(),
       confirmed: false,
-      announcement: 'Check Bungie.net for confirmed season dates',
+      announcement: "Check Bungie.net for confirmed season dates.",
     };
+
   } catch (error) {
-    console.error('Error scraping Destiny 2:', error);
+    console.error("Error scraping Destiny 2:", error);
     throw new Error(`Failed to scrape Destiny 2 season data: ${error}`);
   } finally {
     await page.close();

@@ -1,5 +1,5 @@
-import { ReactElement } from 'react'
-import { render, RenderOptions } from '@testing-library/react'
+import { ReactElement } from "react";
+import { render, RenderOptions } from "@testing-library/react";
 
 /**
  * Custom render function that wraps components with common providers
@@ -7,12 +7,12 @@ import { render, RenderOptions } from '@testing-library/react'
  */
 const customRender = (
   ui: ReactElement,
-  options?: Omit<RenderOptions, 'wrapper'>
-) => render(ui, { ...options })
+  options?: Omit<RenderOptions, "wrapper">,
+) => render(ui, { ...options });
 
 // Re-export everything from testing library
-export * from '@testing-library/react'
-export { customRender as render }
+export * from "@testing-library/react";
+export { customRender as render };
 
 /**
  * Mock data helpers
@@ -28,7 +28,7 @@ export const mockGameData = {
     lastWipe: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
     confirmed: true,
   },
-}
+};
 
 /**
  * Mock fetch responses
@@ -37,7 +37,7 @@ export const createMockFetchResponse = (data: any) => ({
   json: async () => data,
   ok: true,
   status: 200,
-})
+});
 
 /**
  * Common test setup utilities
@@ -45,6 +45,6 @@ export const createMockFetchResponse = (data: any) => ({
 export const setupTests = () => {
   // Add common test setup here
   beforeEach(() => {
-    jest.clearAllMocks()
-  })
-}
+    jest.clearAllMocks();
+  });
+};

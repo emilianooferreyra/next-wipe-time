@@ -4,7 +4,7 @@ import {
   validateCachedData,
   getSmartCacheDuration,
 } from "@/lib/cache-validator";
-import type { WipeData } from '@/schemas/wipe-data';
+import type { WipeData } from "@/schemas/wipe-data";
 import { scrapeApexSeasons } from "@/lib/scrapers/apex-fandom";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { join } from "path";
@@ -54,7 +54,7 @@ async function getCachedData(forceRefresh: boolean) {
         // Smart validation: check if data is actually still valid
         const cacheDuration = getSmartCacheDuration(
           cached.eventType,
-          cached.confirmed
+          cached.confirmed,
         );
         const validation = validateCachedData(cached, cacheDuration);
 
@@ -64,7 +64,7 @@ async function getCachedData(forceRefresh: boolean) {
             : 0;
 
           console.log(
-            `✅ Using valid cache (${validation.reason || "fresh data"})`
+            `✅ Using valid cache (${validation.reason || "fresh data"})`,
           );
 
           return {
@@ -130,7 +130,7 @@ export async function GET(request: Request) {
         headers: {
           "Cache-Control": getCacheControlHeader(CachePresets.NO_CACHE),
         },
-      }
+      },
     );
   }
 }

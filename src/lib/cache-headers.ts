@@ -42,13 +42,13 @@ export function getCacheControlHeader(config: CacheConfig = {}): string {
   } = config;
 
   const parts = [
-    isPublic ? 'public' : 'private',
+    isPublic ? "public" : "private",
     `max-age=${maxAge}`,
     `s-maxage=${sMaxAge}`,
     `stale-while-revalidate=${staleWhileRevalidate}`,
   ];
 
-  return parts.join(', ');
+  return parts.join(", ");
 }
 
 /**

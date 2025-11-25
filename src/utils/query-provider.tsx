@@ -17,7 +17,7 @@ export function QueryProvider({ children }: { children: ReactNode }) {
             refetchOnReconnect: true, // Refetch when internet reconnects
           },
         },
-      })
+      }),
   );
 
   return (

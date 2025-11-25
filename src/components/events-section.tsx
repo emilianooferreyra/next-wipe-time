@@ -49,51 +49,51 @@ export function EventsSection() {
                 gameId === "rust"
                   ? "Rust"
                   : gameId === "tarkov"
-                  ? "Escape from Tarkov"
-                  : gameId === "poe"
-                  ? "Path of Exile"
-                  : gameId === "fortnite"
-                  ? "Fortnite"
-                  : gameId === "diablo4"
-                  ? "Diablo 4"
-                  : gameId === "lastepoch"
-                  ? "Last Epoch"
-                  : gameId;
+                    ? "Escape from Tarkov"
+                    : gameId === "poe"
+                      ? "Path of Exile"
+                      : gameId === "fortnite"
+                        ? "Fortnite"
+                        : gameId === "diablo4"
+                          ? "Diablo 4"
+                          : gameId === "lastepoch"
+                            ? "Last Epoch"
+                            : gameId;
 
               const title =
                 gameId === "poe"
                   ? "New League"
                   : gameId === "diablo4"
-                  ? "New Season"
-                  : gameId === "lastepoch"
-                  ? "New Cycle"
-                  : gameId === "fortnite"
-                  ? "New Season"
-                  : "Wipe";
+                    ? "New Season"
+                    : gameId === "lastepoch"
+                      ? "New Cycle"
+                      : gameId === "fortnite"
+                        ? "New Season"
+                        : "Wipe";
 
               const eventType =
                 gameId === "poe"
                   ? "wipe"
                   : gameId === "diablo4"
-                  ? "season"
-                  : gameId === "lastepoch"
-                  ? "wipe"
-                  : "wipe";
+                    ? "season"
+                    : gameId === "lastepoch"
+                      ? "wipe"
+                      : "wipe";
 
               const accentColor =
                 gameId === "rust"
                   ? "rgb(206, 62, 62)"
                   : gameId === "tarkov"
-                  ? "rgb(205, 180, 128)"
-                  : gameId === "poe"
-                  ? "rgb(175, 96, 37)"
-                  : gameId === "fortnite"
-                  ? "rgb(0, 180, 216)"
-                  : gameId === "diablo4"
-                  ? "rgb(139, 0, 0)"
-                  : gameId === "lastepoch"
-                  ? "rgb(138, 43, 226)"
-                  : "rgb(255, 255, 255)";
+                    ? "rgb(205, 180, 128)"
+                    : gameId === "poe"
+                      ? "rgb(175, 96, 37)"
+                      : gameId === "fortnite"
+                        ? "rgb(0, 180, 216)"
+                        : gameId === "diablo4"
+                          ? "rgb(139, 0, 0)"
+                          : gameId === "lastepoch"
+                            ? "rgb(138, 43, 226)"
+                            : "rgb(255, 255, 255)";
 
               allEvents.push({
                 id: `${gameId}-next-wipe`,
