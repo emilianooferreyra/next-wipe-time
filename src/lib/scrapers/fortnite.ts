@@ -97,14 +97,6 @@ export async function scrapeFortniteWipe(): Promise<WipeData> {
 
       console.log("✅ Extracting data...");
 
-      // Take screenshot for debugging
-      try {
-        await page.screenshot({ path: "fortnite-debug.png", fullPage: false });
-        console.log("📸 Screenshot saved to fortnite-debug.png");
-      } catch (e) {
-        console.warn("Could not save screenshot:", e);
-      }
-
       // Extract season information and countdown data
       const seasonInfo = await page.evaluate(() => {
         const text = document.body.textContent || "";

@@ -43,3 +43,6 @@ next-env.d.ts
 # cache
 /cache
 *.json.tmp
+
+# debug images
+*-debug.png
