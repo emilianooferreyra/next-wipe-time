@@ -29,42 +29,19 @@ export async function loadGameConfig(
   // Dynamic import based on game ID
   try {
     switch (gameId) {
-      // Single games
       case "rust":
         config = (await import("./configs/rust.config")).rustConfig;
         break;
       case "tarkov":
+      case "tarkov-arena":
         config = (await import("./configs/tarkov.config")).tarkovConfig;
         break;
       case "fortnite":
         config = (await import("./configs/fortnite.config")).fortniteConfig;
         break;
-      case "lastepoch":
-        config = (await import("./configs/lastepoch.config")).lastepochConfig;
-        break;
-      case "valorant":
-        config = (await import("./configs/valorant.config")).valorantConfig;
-        break;
-      case "lol":
-        config = (await import("./configs/lol.config")).lolConfig;
-        break;
-      case "tft":
-        config = (await import("./configs/tft.config")).tftConfig;
-        break;
-      case "apex":
-        config = (await import("./configs/apex.config")).apexConfig;
-        break;
       case "pubg":
         config = (await import("./configs/pubg.config")).pubgConfig;
         break;
-      case "warframe":
-        config = (await import("./configs/warframe.config")).warframeConfig;
-        break;
-      case "dbd":
-        config = (await import("./configs/dbd.config")).dbdConfig;
-        break;
-
-      // Multi-version games
       case "poe":
         config = (await import("./configs/poe.config")).poeConfig;
         break;
@@ -83,28 +60,6 @@ export async function loadGameConfig(
       case "diabloimmortal":
         config = (await import("./configs/diabloimmortal.config"))
           .diabloImmortalConfig;
-        break;
-      case "cod":
-        config = (await import("./configs/cod.config")).codConfig;
-        break;
-      case "cod-mw3":
-        config = (await import("./configs/cod-mw3.config")).codmw3Config;
-        break;
-      case "cod-bo6":
-        config = (await import("./configs/cod-bo6.config")).codbo6Config;
-        break;
-      case "rocketleague":
-        config = (await import("./configs/rocketleague.config"))
-          .rocketLeagueConfig;
-        break;
-      case "overwatch2":
-        config = (await import("./configs/overwatch2.config")).overwatch2Config;
-        break;
-      case "destiny2":
-        config = (await import("./configs/destiny2.config")).destiny2Config;
-        break;
-      case "r6siege":
-        config = (await import("./configs/r6siege.config")).r6siegeConfig;
         break;
 
       default:
@@ -137,31 +92,16 @@ export async function preloadConfigs(gameIds: string[]): Promise<void> {
  */
 export function getSupportedGameIds(): string[] {
   return [
-    // Single games
     "rust",
     "tarkov",
+    "tarkov-arena",
     "fortnite",
-    "lastepoch",
-    "valorant",
-    "lol",
-    "tft",
-    "apex",
     "pubg",
-    "warframe",
-    "dbd",
-    // Multi-version games
     "poe",
     "poe2",
     "diablo4",
     "diablo3",
     "diablo2",
     "diabloimmortal",
-    "cod",
-    "cod-mw3",
-    "cod-bo6",
-    "rocketleague",
-    "overwatch2",
-    "destiny2",
-    "r6siege",
   ];
 }

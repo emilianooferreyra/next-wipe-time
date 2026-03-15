@@ -215,20 +215,16 @@ export const GameCard = memo(
       // Other games use static titles
       if (game.id === "poe") return "Next League";
       if (game.id === "diablo4") return "Next Season";
-      if (game.id === "lastepoch") return "Next Cycle";
+      if (game.id === "diablo3") return "Next Season";
+      if (game.id === "diablo2") return "Next Ladder";
+      if (game.id === "diabloimmortal") return "Next Season";
       if (game.id === "fortnite") return "Next Season";
-      if (game.id === "valorant") return "Next Act";
-      if (game.id === "lol") return "Next Season";
-      if (game.id === "tft") return "Next Set";
-      if (game.id === "overwatch2") return "Next Season";
-      if (game.id === "destiny2") return "Next Season";
-      if (game.id === "r6siege") return "Next Season";
-      if (game.id === "warframe") return "Next Update";
+      if (game.id === "pubg") return "Next Season";
       if (wipeData?.isRelease) return "Release";
       return "Next Wipe";
     };
 
-    const isRiotGame = ["valorant", "lol", "tft"].includes(game.id);
+    const isRiotGame = false;
 
     return (
       <div

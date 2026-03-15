@@ -5,10 +5,15 @@ import type { GameEvent, EventType } from "@/lib/events/types";
 const GAME_IDS = [
   "rust",
   "tarkov",
+  "tarkov-arena",
   "poe",
+  "poe2",
   "fortnite",
   "diablo4",
-  "lastepoch",
+  "diablo3",
+  "diablo2",
+  "diabloimmortal",
+  "pubg",
 ] as const;
 
 const GAME_META: Record<
@@ -27,8 +32,20 @@ const GAME_META: Record<
     type: "wipe",
     accentColor: "rgb(205, 180, 128)",
   },
+  "tarkov-arena": {
+    name: "Tarkov Arena",
+    title: "Season",
+    type: "season",
+    accentColor: "rgb(205, 180, 128)",
+  },
   poe: {
     name: "Path of Exile",
+    title: "New League",
+    type: "wipe",
+    accentColor: "rgb(175, 96, 37)",
+  },
+  poe2: {
+    name: "Path of Exile 2",
     title: "New League",
     type: "wipe",
     accentColor: "rgb(175, 96, 37)",
@@ -40,16 +57,34 @@ const GAME_META: Record<
     accentColor: "rgb(0, 180, 216)",
   },
   diablo4: {
-    name: "Diablo 4",
+    name: "Diablo IV",
     title: "New Season",
     type: "season",
     accentColor: "rgb(139, 0, 0)",
   },
-  lastepoch: {
-    name: "Last Epoch",
-    title: "New Cycle",
+  diablo3: {
+    name: "Diablo III",
+    title: "New Season",
+    type: "season",
+    accentColor: "rgb(139, 0, 0)",
+  },
+  diablo2: {
+    name: "Diablo II: Resurrected",
+    title: "New Ladder",
     type: "wipe",
-    accentColor: "rgb(138, 43, 226)",
+    accentColor: "rgb(139, 0, 0)",
+  },
+  diabloimmortal: {
+    name: "Diablo Immortal",
+    title: "New Season",
+    type: "season",
+    accentColor: "rgb(139, 0, 0)",
+  },
+  pubg: {
+    name: "PUBG: Battlegrounds",
+    title: "New Season",
+    type: "season",
+    accentColor: "rgb(244, 125, 0)",
   },
 };
 

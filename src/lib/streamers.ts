@@ -222,38 +222,6 @@ export const GLOBAL_STREAMERS: Record<string, StreamerProfile> = {
     verified: true,
   },
 
-  // CoD
-  scump: {
-    username: "scump",
-    platform: "twitch",
-    games: ["cod", "cod-bo6"],
-    verified: true,
-  },
-  shotzzy: {
-    username: "shotzzy",
-    platform: "twitch",
-    games: ["cod", "cod-bo6"],
-    verified: true,
-  },
-  huskerrs: {
-    username: "huskerrs",
-    platform: "twitch",
-    games: ["cod", "warzone"],
-    verified: true,
-  },
-  teepee: {
-    username: "teepee",
-    platform: "twitch",
-    games: ["cod", "warzone"],
-    verified: true,
-  },
-  symfuhny: {
-    username: "symfuhny",
-    platform: "twitch",
-    games: ["cod", "warzone"],
-    verified: true,
-  },
-
   // Fortnite
   ninja: {
     username: "ninja",
@@ -280,63 +248,11 @@ export const GLOBAL_STREAMERS: Record<string, StreamerProfile> = {
     verified: true,
   },
 
-  // Valorant
-  tarik: {
-    username: "tarik",
-    platform: "twitch",
-    games: ["valorant"],
-    verified: true,
-  },
-  tenz: {
-    username: "tenz",
-    platform: "twitch",
-    games: ["valorant"],
-    verified: true,
-  },
-  kyedae: {
-    username: "kyedae",
-    platform: "twitch",
-    games: ["valorant"],
-    verified: true,
-  },
-  s0m: {
-    username: "s0m",
-    platform: "twitch",
-    games: ["valorant"],
-    verified: true,
-  },
-  shahzam: {
-    username: "shahzam",
-    platform: "twitch",
-    games: ["valorant"],
-    verified: true,
-  },
-
-  // LoL
-  loltyler1: {
-    username: "loltyler1",
-    platform: "twitch",
-    games: ["lol"],
-    verified: true,
-  },
-  caedrel: {
-    username: "caedrel",
-    platform: "twitch",
-    games: ["lol"],
-    verified: true,
-  },
-  thebausffs: {
-    username: "thebausffs",
-    platform: "twitch",
-    games: ["lol"],
-    verified: true,
-  },
-
   // Generic
   shroud: {
     username: "shroud",
     platform: "twitch",
-    games: ["valorant", "deadlock", "tarkov"],
+    games: ["tarkov"],
     verified: true,
   },
 };

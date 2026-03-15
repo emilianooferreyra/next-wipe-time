@@ -27,13 +27,13 @@ export async function getUpcomingEvents(): Promise<GameEvent[]> {
         game.id === "diablo4" ? "season" : "wipe";
 
       const title =
-        game.id === "poe"
+        game.id === "poe" || game.id === "poe2"
           ? "New League"
-          : game.id === "diablo4"
+          : game.id === "diablo4" || game.id === "diablo3" || game.id === "diabloimmortal"
             ? "New Season"
-            : game.id === "lastepoch"
-              ? "New Cycle"
-              : game.id === "fortnite"
+            : game.id === "diablo2"
+              ? "New Ladder"
+              : game.id === "fortnite" || game.id === "pubg" || game.id === "tarkov-arena"
                 ? "New Season"
                 : "Wipe";
 

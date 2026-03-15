@@ -36,23 +36,15 @@ export async function GET(request: Request) {
     const games = [
       "rust",
       "tarkov",
+      "tarkov-arena",
       "poe",
+      "poe2",
       "fortnite",
       "diablo4",
-      "lastepoch",
-      "valorant",
-      "lol",
-      "tft",
-      "apex",
-      "cod",
-      "rocketleague",
-      "dbd",
+      "diablo3",
+      "diablo2",
+      "diabloimmortal",
       "pubg",
-      "overwatch2",
-      "destiny2",
-      "r6siege",
-      "poe2",
-      "warframe",
     ];
 
     const results = await Promise.allSettled(

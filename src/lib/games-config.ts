@@ -108,40 +108,6 @@ export const GAMES_WITH_VERSIONS: Record<string, GameConfig> = {
     defaultVersionId: "poe2",
   },
 
-  cod: {
-    parentId: "cod",
-    name: "Call of Duty",
-    accentColor: "rgb(0, 255, 0)",
-    backgroundImage:
-      "https://www.callofduty.com/content/dam/atvi/callofduty/cod-touchui/blackops6/meta/bo6-meta-share.jpg",
-    hoverMedia: "/videos/games/cod.gif",
-    hoverMediaType: "gif",
-    versions: [
-      {
-        id: "cod-bo6",
-        label: "Black Ops 6",
-        shortLabel: "BO6",
-        image:
-          "https://www.callofduty.com/content/dam/atvi/callofduty/cod-touchui/blackops6/meta/bo6-meta-share.jpg",
-      },
-      {
-        id: "cod-mw3",
-        label: "Modern Warfare III",
-        shortLabel: "MW3",
-        image:
-          "https://www.callofduty.com/content/dam/atvi/callofduty/cod-touchui/mw3/meta/mw3-meta-share.jpg",
-      },
-      {
-        id: "cod",
-        label: "Warzone",
-        shortLabel: "Warzone",
-        image:
-          "https://www.callofduty.com/content/dam/atvi/callofduty/cod-touchui/warzone/meta/warzone-meta-share.jpg",
-      },
-    ],
-    defaultVersionId: "cod-bo6",
-  },
-
   tarkov: {
     parentId: "tarkov",
     name: "Escape from Tarkov",
@@ -193,59 +159,6 @@ export const GAMES_WITH_VERSIONS: Record<string, GameConfig> = {
     defaultVersionId: "fortnite",
   },
 
-  valorant: {
-    parentId: "valorant",
-    name: "Valorant",
-    accentColor: "rgb(255, 70, 85)",
-    backgroundImage:
-      "https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blt7275cf5188820a4b/66eb12228514934a493a7d25/VAL_EP9_AII_Teaser_Article_Banner.jpg",
-    coverImage:
-      "https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/bltc555a5f51184f06b/6494777f84b3ee51f47fdbe7/Valorant_Article_Banner_1920x1080.jpg",
-    hoverMedia: "/videos/games/valorant.mp4",
-    hoverMediaType: "video",
-    versions: [],
-    defaultVersionId: "valorant",
-  },
-
-  lol: {
-    parentId: "lol",
-    name: "League of Legends",
-    accentColor: "rgb(201, 156, 75)",
-    backgroundImage:
-      "https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Ahri_0.jpg",
-    coverImage:
-      "https://cdn1.epicgames.com/offer/24b9b5e658bc4a0f88c24e9cbe476bb2/EGS_LeagueofLegends_RiotGames_S1_2560x1440-8f7d8f019d7b7b6f0c9c9c9c9c9c9c9c_2560x1440-8f7d8f019d7b7b6f0c9c9c9c9c9c9c9c",
-    hoverMedia: "/videos/games/lol.mp4",
-    hoverMediaType: "video",
-    versions: [],
-    defaultVersionId: "lol",
-  },
-
-
-  tft: {
-    parentId: "tft",
-    name: "Teamfight Tactics",
-    accentColor: "rgb(201, 156, 75)",
-    backgroundImage: "https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Sett_0.jpg",
-    coverImage: "https://cdn1.epicgames.com/salesEvent/salesEvent/EGS_TeamfightTactics_RiotGames_S1_2560x1440-2560x1440-8f7d8f019d7b7b6f0c9c9c9c9c9c9c9c",
-    hoverMedia: "/videos/games/tft.mp4",
-    hoverMediaType: "video",
-    versions: [],
-    defaultVersionId: "tft",
-  },
-
-  apex: {
-    parentId: "apex",
-    name: "Apex Legends",
-    accentColor: "rgb(255, 69, 0)",
-    backgroundImage: "https://media.contentapi.ea.com/content/dam/apex-legends/images/2023/05/apex-resurrection-keyart-16x9.jpg.adapt.1456w.jpg",
-    coverImage: "https://cdn1.epicgames.com/offer/50401f2a5a4d4f17ad8d1b096177ac45/EGS_ApexLegends_RespawnEntertainment_S1_2560x1440-2560x1440-8f7d8f019d7b7b6f0c9c9c9c9c9c9c9c",
-    hoverMedia: "/videos/games/apex.mp4",
-    hoverMediaType: "video",
-    versions: [],
-    defaultVersionId: "apex",
-  },
-
   pubg: {
     parentId: "pubg",
     name: "PUBG",
@@ -258,89 +171,6 @@ export const GAMES_WITH_VERSIONS: Record<string, GameConfig> = {
     defaultVersionId: "pubg",
   },
 
-  warframe: {
-    parentId: "warframe",
-    name: "Warframe",
-    accentColor: "rgb(255, 215, 0)",
-    backgroundImage: "https://cdn.akamai.steamstatic.com/steam/apps/230410/header.jpg?t=1708706822",
-    coverImage: "https://cdn.akamai.steamstatic.com/steam/apps/230410/header.jpg?t=1708706822",
-    hoverMedia: "/videos/games/warframe.mp4",
-    hoverMediaType: "video",
-    versions: [],
-    defaultVersionId: "warframe",
-  },
-
-  dbd: {
-    parentId: "dbd",
-    name: "Dead by Daylight",
-    accentColor: "rgb(139, 0, 0)",
-    backgroundImage: "https://cdn.akamai.steamstatic.com/steam/apps/381210/header.jpg?t=1708706822",
-    coverImage: "https://cdn.akamai.steamstatic.com/steam/apps/381210/header.jpg?t=1708706822",
-    hoverMedia: "/videos/games/dbd.mp4",
-    hoverMediaType: "video",
-    versions: [],
-    defaultVersionId: "dbd",
-  },
-
-  rocketleague: {
-    parentId: "rocketleague",
-    name: "Rocket League",
-    accentColor: "rgb(0, 100, 255)",
-    backgroundImage: "https://cdn.akamai.steamstatic.com/steam/apps/252950/header.jpg?t=1708706822",
-    coverImage: "https://cdn.akamai.steamstatic.com/steam/apps/252950/header.jpg?t=1708706822",
-    hoverMedia: "/videos/games/rocketleague.mp4",
-    hoverMediaType: "video",
-    versions: [],
-    defaultVersionId: "rocketleague",
-  },
-
-  overwatch2: {
-    parentId: "overwatch2",
-    name: "Overwatch 2",
-    accentColor: "rgb(255, 140, 0)",
-    backgroundImage: "https://blz-contentstack-assets.akamaized.net/v3/assets/blta8f9a8e092360c6c/blt66c62e7c529b0d95/634064d2a5e11b7cf6beb7a0/ow2-keyart.jpg",
-    coverImage: "https://blz-contentstack-assets.akamaized.net/v3/assets/blta8f9a8e092360c6c/blt66c62e7c529b0d95/634064d2a5e11b7cf6beb7a0/ow2-keyart.jpg",
-    hoverMedia: "/videos/games/overwatch2.mp4",
-    hoverMediaType: "video",
-    versions: [],
-    defaultVersionId: "overwatch2",
-  },
-
-  destiny2: {
-    parentId: "destiny2",
-    name: "Destiny 2",
-    accentColor: "rgb(255, 215, 0)",
-    backgroundImage: "https://cdn.akamai.steamstatic.com/steam/apps/1085660/header.jpg?t=1708706822",
-    coverImage: "https://cdn.akamai.steamstatic.com/steam/apps/1085660/header.jpg?t=1708706822",
-    hoverMedia: "/videos/games/destiny2.mp4",
-    hoverMediaType: "video",
-    versions: [],
-    defaultVersionId: "destiny2",
-  },
-
-  r6siege: {
-    parentId: "r6siege",
-    name: "Rainbow Six Siege",
-    accentColor: "rgb(255, 69, 0)",
-    backgroundImage: "https://cdn.akamai.steamstatic.com/steam/apps/359550/header.jpg?t=1708706822",
-    coverImage: "https://cdn.akamai.steamstatic.com/steam/apps/359550/header.jpg?t=1708706822",
-    hoverMedia: "/videos/games/r6siege.mp4",
-    hoverMediaType: "video",
-    versions: [],
-    defaultVersionId: "r6siege",
-  },
-
-  lastepoch: {
-    parentId: "lastepoch",
-    name: "Last Epoch",
-    accentColor: "rgb(128, 0, 128)",
-    backgroundImage: "https://cdn.akamai.steamstatic.com/steam/apps/899770/header.jpg?t=1708706822",
-    coverImage: "https://cdn.akamai.steamstatic.com/steam/apps/899770/header.jpg?t=1708706822",
-    hoverMedia: "/videos/games/lastepoch.mp4",
-    hoverMediaType: "video",
-    versions: [],
-    defaultVersionId: "lastepoch",
-  },
 };
 /**
  * Get game config by parent ID

@@ -58,7 +58,6 @@ export const gameScraperMap = {
   },
 };
 
-// Backward compatibility exports
 export { optimizedScraperEngine as scraperEngine };
 
 // Helper functions for direct usage

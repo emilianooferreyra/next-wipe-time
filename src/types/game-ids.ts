@@ -8,27 +8,15 @@
 // Single version games
 export const SINGLE_GAMES = [
   "rust",
-  "tarkov",
   "fortnite",
-  "lastepoch",
-  "valorant",
-  "lol",
-  "tft",
-  "apex",
   "pubg",
-  "warframe",
-  "dbd",
-  "rocketleague",
-  "overwatch2",
-  "destiny2",
-  "r6siege",
 ] as const;
 
 // Multi-version game families
 export const MULTI_VERSION_GAMES = {
   diablo: ["diablo4", "diablo3", "diablo2", "diabloimmortal"],
   poe: ["poe", "poe2"],
-  cod: ["cod", "cod-mw3", "cod-bo6"],
+  tarkov: ["tarkov", "tarkov-arena"],
 } as const;
 
 // Extract types from const arrays
