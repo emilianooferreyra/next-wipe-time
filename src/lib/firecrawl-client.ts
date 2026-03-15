@@ -118,15 +118,29 @@ async function parseResponse<T>(
 
 // ── Public API ─────────────────────────────────────────────────────────────
 
+// Deduplicates concurrent calls to the same URL+options (e.g. PoE and PoE2
+// both scraping pathofexile.com/news in the same cron run).
+const inflightScrapes = new Map<string, Promise<FirecrawlScrapeResult>>();
+
 /**
- * Scrape a single URL
+ * Scrape a single URL. Concurrent calls with identical options share one request.
  */
 export async function firecrawlScrape(
   options: FirecrawlScrapeOptions
 ): Promise<FirecrawlScrapeResult> {
+  const key = JSON.stringify({
+    url: options.url,
+    formats: options.formats ?? ["markdown"],
+    onlyMainContent: options.onlyMainContent ?? true,
+    waitFor: options.waitFor ?? 0,
+  });
+
+  const existing = inflightScrapes.get(key);
+  if (existing) return existing;
+
   const apiKey = requireApiKey();
 
-  const response = await fetch(`${FIRECRAWL_BASE_URL}/scrape`, {
+  const promise = fetch(`${FIRECRAWL_BASE_URL}/scrape`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -140,9 +154,12 @@ export async function firecrawlScrape(
       excludeTags: options.excludeTags,
       waitFor: options.waitFor,
     }),
-  });
+  })
+    .then((r) => parseResponse(r, ScrapeResponseSchema, "firecrawlScrape"))
+    .finally(() => inflightScrapes.delete(key));
 
-  return parseResponse(response, ScrapeResponseSchema, "firecrawlScrape");
+  inflightScrapes.set(key, promise);
+  return promise;
 }
 
 /**
