@@ -1,33 +1,18 @@
-"use client";
+import type { Metadata } from "next";
+import { HomeClient } from "./home-client";
 
-import { useState } from "react";
-import { useGameQueries } from "@/hooks/use-game-queries";
-import { useGameFilters } from "@/hooks/use-game-filters";
-import { Header } from "./_components/header";
-import { Footer } from "./_components/footer";
-import { GameFilters } from "./_components/game-filters";
-import { GameGrid } from "./_components/game-grid";
-import type { FilterType } from "@/types/game";
+export const metadata: Metadata = {
+  title: "WipePunch — Track Game Wipes & Season Resets",
+  description:
+    "Track video game wipes, season resets, and patch schedules across Rust, Path of Exile, Fortnite, and more. Never miss a fresh start.",
+  openGraph: {
+    title: "WipePunch — Track Game Wipes & Season Resets",
+    description:
+      "Live countdown timers for wipes, seasons, and resets across your favorite games.",
+    type: "website",
+  },
+};
 
 export default function Home() {
-  const [filter, setFilter] = useState<FilterType>("all");
-  const { gameData, loading } = useGameQueries();
-  const filteredGames = useGameFilters(gameData, filter);
-
-  return (
-    <div className="relative min-h-screen font-sans bg-[#000000]">
-      <Header />
-      <GameFilters
-        filter={filter}
-        onFilterChange={setFilter}
-        gameData={gameData}
-      />
-
-      <main className="relative mx-auto max-w-7xl px-6 py-12">
-        <GameGrid games={filteredGames} gameData={gameData} loading={loading} />
-      </main>
-
-      <Footer />
-    </div>
-  );
+  return <HomeClient />;
 }

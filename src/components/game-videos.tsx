@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import Image from "next/image";
 import { Play, Youtube } from "lucide-react";
 
 interface VideoData {
@@ -18,39 +19,26 @@ interface GameVideosProps {
   gameId: string;
 }
 
+async function fetchGameVideos(gameId: string): Promise<VideoData[]> {
+  const response = await fetch("/api/games/tarkov/details");
+  if (!response.ok) throw new Error("Failed to fetch videos");
+  const data = await response.json();
+  return data.videos ?? [];
+}
+
 export function GameVideos({ gameId }: GameVideosProps) {
-  const [videos, setVideos] = useState<VideoData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: videos = [], isLoading } = useQuery({
+    queryKey: ["game-videos", gameId],
+    queryFn: () => fetchGameVideos(gameId),
+    staleTime: 10 * 60 * 1000, // videos don't change often
+  });
 
-  useEffect(() => {
-    const fetchVideos = async () => {
-      try {
-        setLoading(true);
-        // For now, this would be integrated with the game details endpoint
-        // const response = await fetch(`/api/games/${gameId}/details`);
-        // For Tarkov specifically
-        const response = await fetch("/api/games/tarkov/details");
-
-        if (!response.ok) throw new Error("Failed to fetch videos");
-
-        const data = await response.json();
-        setVideos(data.videos || []);
-      } catch (error) {
-        console.error("Error fetching videos:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchVideos();
-  }, [gameId]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="space-y-3">
-        {[1, 2, 3].map((i) => (
+        {["a", "b", "c"].map((k) => (
           <div
-            key={i}
+            key={k}
             className="h-24 bg-zinc-800/50 rounded-lg animate-pulse"
           />
         ))}
@@ -79,10 +67,12 @@ export function GameVideos({ gameId }: GameVideosProps) {
         >
           <div className="relative overflow-hidden rounded-lg bg-zinc-800 aspect-video mb-2">
             {video.thumbnailUrl ? (
-              <img
+              <Image
                 src={video.thumbnailUrl}
                 alt={video.title}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                fill
+                sizes="(max-width: 768px) 100vw, 50vw"
+                className="object-cover group-hover:scale-105 transition-transform duration-300"
               />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-zinc-700 to-zinc-800 flex items-center justify-center">

@@ -5,7 +5,7 @@ import {
   Gamepad2,
   TriangleAlert,
 } from "lucide-react";
-import type { GameDataMap, FilterType } from "@/types/game";
+import type { FilterType, GameDataMap } from "@/types/game";
 
 type GameFiltersProps = {
   filter: FilterType;
@@ -54,7 +54,7 @@ export function GameFilters({
       label: "Estimated",
       icon: <TriangleAlert />,
       count: Object.values(gameData).filter(
-        (d) => d?.nextWipe && d?.confirmed === false
+        (d) => d?.nextWipe && d?.confirmed === false,
       ).length,
     },
   ];
@@ -67,22 +67,27 @@ export function GameFilters({
             const isActive = filter === tab.id;
             return (
               <button
+                type="button"
                 key={tab.id}
                 onClick={() => onFilterChange(tab.id as FilterType)}
-                className={`relative px-6 py-4 text-sm font-medium transition-all duration-300 whitespace-nowrap ${
-                  isActive
-                    ? "text-[#FA5D29]"
-                    : "text-zinc-400 hover:text-zinc-300"
+                className={`group relative px-6 py-4 text-sm font-medium transition-all duration-300 whitespace-nowrap ${
+                  isActive ? "text-[#FA5D29]" : "text-zinc-400 hover:text-white"
                 }`}
               >
-                <span className="flex items-center gap-2 transition-colors duration-300">
+                <span className="flex items-center gap-2 transition-all duration-300 group-hover:scale-105">
                   {tab.icon &&
                     (typeof tab.icon === "string" ? (
-                      <span>{tab.icon}</span>
+                      <span className="transition-transform duration-300 group-hover:scale-110">
+                        {tab.icon}
+                      </span>
                     ) : (
-                      tab.icon
+                      <span className="transition-transform duration-300 group-hover:scale-110">
+                        {tab.icon}
+                      </span>
                     ))}
-                  <span>{tab.label}</span>
+                  <span className="transition-all duration-300">
+                    {tab.label}
+                  </span>
                   {tab.count !== undefined && tab.count > 0 && (
                     <span
                       className={`px-2 py-0.5 rounded-full text-xs transition-all duration-300 ${

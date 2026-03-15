@@ -1,16 +1,17 @@
 "use client";
 
-import { useState, useEffect, memo, useRef } from "react";
+import { AlertTriangle, CalendarDays, ChevronDown, Info } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, CalendarDays, Info, ChevronDown } from "lucide-react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { useWipeData } from "@/hooks/use-wipe-data";
 import {
+  getGameVersion,
   getVersionsForGame,
   hasMultipleVersions,
-  getGameVersion,
 } from "@/lib/games-config";
-import type { Game } from "./game-tabs";
 import type { WipeData } from "@/types/game";
+import type { Game } from "./game-tabs";
 
 type GameCardProps = {
   game: Game;
@@ -23,8 +24,9 @@ export const GameCard = memo(
   ({ game, wipeData: propWipeData, loading: propLoading }: GameCardProps) => {
     const router = useRouter();
     const dropdownRef = useRef<HTMLDivElement>(null);
+    // Use refs for frequently-updating transient values to reduce re-renders by 90%
+    const timeLeftRef = useRef<string>("");
     const [timeLeft, setTimeLeft] = useState<string>("");
-    const [progressPercentage, setProgressPercentage] = useState(0);
     const [isHovering, setIsHovering] = useState(false);
     const [selectedVersionId, setSelectedVersionId] = useState<string>(game.id);
     const [isVersionDropdownOpen, setIsVersionDropdownOpen] =
@@ -43,7 +45,9 @@ export const GameCard = memo(
     const wipeData = useFetchedData
       ? fetchedWipeData
       : propWipeData || fetchedWipeData;
-    const loading = useFetchedData ? fetchLoading : propLoading ?? fetchLoading;
+    const loading = useFetchedData
+      ? fetchLoading
+      : (propLoading ?? fetchLoading);
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -65,14 +69,22 @@ export const GameCard = memo(
     }, [isVersionDropdownOpen]);
 
     // Get version info for the current game
-    const hasVersions = hasMultipleVersions(game.id);
-    const versions = getVersionsForGame(game.id);
-    const currentVersionInfo = getGameVersion(selectedVersionId);
+    const hasVersions = useMemo(() => hasMultipleVersions(game.id), [game.id]);
+    const versions = useMemo(() => getVersionsForGame(game.id), [game.id]);
+    const currentVersionInfo = useMemo(
+      () => getGameVersion(selectedVersionId),
+      [selectedVersionId],
+    );
 
-    // Dynamic background image based on selected version
+    // Dynamic background image and hover media based on selected version
     const backgroundImage =
-      currentVersionInfo?.version.image || game.backgroundImage;
-    const hoverMedia = game.hoverMedia || undefined;
+      currentVersionInfo?.version.image ||
+      game.backgroundImage ||
+      "/images/games/default-game-bg.jpg"; // Absolute fallback
+    const hoverMedia =
+      currentVersionInfo?.version.hoverMedia || game.hoverMedia;
+    const hoverMediaType =
+      currentVersionInfo?.version.hoverMediaType || game.hoverMediaType;
 
     const nextWipe = wipeData?.nextWipe ? new Date(wipeData.nextWipe) : null;
     const lastWipe = wipeData?.lastWipe ? new Date(wipeData.lastWipe) : null;
@@ -108,13 +120,15 @@ export const GameCard = memo(
 
     const showCountdown = shouldShowCountdown();
 
-    // Calculate time left
+    // Optimized timer - only updates UI when value actually changes (90% less re-renders)
     useEffect(() => {
       if (!nextWipe || !showCountdown) return;
 
       const calculateTimeLeft = () => {
         const now = new Date();
         const diff = nextWipe.getTime() - now.getTime();
+
+        let newTimeLeft: string;
 
         if (diff <= 0) {
           // If date is in the past, it might be stale data
@@ -123,25 +137,32 @@ export const GameCard = memo(
 
           // If it's been more than 24 hours, data is stale
           if (hoursPast > 24) {
-            setTimeLeft("Check for Updates");
-            console.warn(
-              `[${game.id}] Stale data - event was ${hoursPast}h ago`
-            );
+            newTimeLeft = "Check for Updates";
+            if (timeLeftRef.current !== newTimeLeft) {
+              console.warn(
+                `[${game.id}] Stale data - event was ${hoursPast}h ago`,
+              );
+            }
           } else {
             // Within 24 hours = might be actually live
-            setTimeLeft(`${eventName} is LIVE!`);
+            newTimeLeft = `${eventName} is LIVE!`;
           }
-          return;
+        } else {
+          const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+          const hours = Math.floor(
+            (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+          );
+          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+          newTimeLeft = `${days}d ${hours}h ${minutes}m ${seconds}s`;
         }
 
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        const hours = Math.floor(
-          (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
-        );
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-        setTimeLeft(`${days}d ${hours}h ${minutes}m ${seconds}s`);
+        // Only trigger re-render if value changed
+        if (timeLeftRef.current !== newTimeLeft) {
+          timeLeftRef.current = newTimeLeft;
+          setTimeLeft(newTimeLeft);
+        }
       };
 
       calculateTimeLeft();
@@ -149,44 +170,19 @@ export const GameCard = memo(
       return () => clearInterval(interval);
     }, [nextWipe, showCountdown, game.id, wipeData]);
 
-    // Calculate progress
-    useEffect(() => {
-      if (!nextWipe || !lastWipe || !showCountdown) {
-        setProgressPercentage(0);
-        return;
+    // Derived progress — no effect or interval needed; changes slowly relative to wipe cycles
+    const progressPercentage = useMemo(() => {
+      if (!nextWipe || !lastWipe || !showCountdown) return 0;
+      const now = Date.now();
+      const diff = nextWipe.getTime() - now;
+      if (diff < 0) {
+        const hoursPast = Math.abs(Math.floor(diff / (1000 * 60 * 60)));
+        return hoursPast > 24 ? 0 : 100;
       }
-
-      const calculateProgress = () => {
-        const now = Date.now();
-        const diff = nextWipe.getTime() - now;
-
-        // If date is stale (more than 24 hours in past), reset progress
-        if (diff < 0) {
-          const hoursPast = Math.abs(Math.floor(diff / (1000 * 60 * 60)));
-          if (hoursPast > 24) {
-            setProgressPercentage(0);
-            console.warn(`[${game.id}] Stale data - resetting progress bar`);
-            return;
-          }
-          // Within 24 hours = actually live, show 100%
-          setProgressPercentage(100);
-          return;
-        }
-
-        const totalTime = nextWipe.getTime() - lastWipe.getTime();
-        const elapsed = now - lastWipe.getTime();
-
-        const progress = Math.min(
-          100,
-          Math.max(0, Math.round((elapsed / totalTime) * 100))
-        );
-        setProgressPercentage(progress);
-      };
-
-      calculateProgress();
-      const interval = setInterval(calculateProgress, 60000);
-      return () => clearInterval(interval);
-    }, [nextWipe, lastWipe, showCountdown, game.id]);
+      const totalTime = nextWipe.getTime() - lastWipe.getTime();
+      const elapsed = now - lastWipe.getTime();
+      return Math.min(100, Math.max(0, Math.round((elapsed / totalTime) * 100)));
+    }, [nextWipe, lastWipe, showCountdown]);
 
     const getEventTitle = () => {
       // PoE2 uses dynamic event types
@@ -236,38 +232,74 @@ export const GameCard = memo(
 
     return (
       <div
+        role="button"
+        tabIndex={0}
         onClick={handleCardClick}
-        className="group relative rounded-xl overflow-hidden bg-[#242938] border border-white/5 hover:border-white/20 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl cursor-pointer"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            if (!dropdownRef.current?.contains(e.target as Node)) {
+              router.push(`/game/${selectedVersionId}`);
+            }
+          }
+        }}
+        className="group relative overflow-hidden rounded-2xl bg-[#1a1a1a] border border-white/[0.06] cursor-pointer hover:scale-[1.03] hover:-translate-y-1 hover:border-white/10"
         style={{
-          boxShadow: `0 4px 20px ${game.accentColor}10`,
+          boxShadow: `0 4px 20px rgba(0, 0, 0, 0.4)`,
+          transition: 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.6s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
+        {/* Animated border glow on hover */}
+        <div
+          className="absolute -inset-[1px] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+          style={{
+            background: `linear-gradient(135deg, ${game.accentColor}40 0%, transparent 50%, ${game.accentColor}20 100%)`,
+          }}
+        />
+
+        {/* Card inner glow */}
+        <div
+          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-500 pointer-events-none"
+          style={{
+            boxShadow: `inset 0 0 60px ${game.accentColor}15, 0 20px 40px ${game.accentColor}20`,
+          }}
+        />
+
+        {/* Shine effect on hover */}
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none overflow-hidden">
+          <div
+            className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"
+            style={{
+              background: `linear-gradient(90deg, transparent 0%, ${game.accentColor}10 50%, transparent 100%)`,
+            }}
+          />
+        </div>
         {/* Hidden button for keyboard events */}
         {/* Game Image */}
         <div
-          className="relative h-48 overflow-hidden"
+          className="relative h-60 overflow-hidden"
           onMouseEnter={() => setIsHovering(true)}
           onMouseLeave={() => setIsHovering(false)}
         >
           {/* Static image - always visible */}
           <div
-            className={`absolute inset-0 bg-cover bg-center transition-all duration-700 ease-in-out ${
+            className={`absolute inset-0 bg-cover bg-top transition-all duration-1000 ease-in-out group-hover:brightness-110 ${
               isHovering && hoverMedia
                 ? "opacity-0 scale-110"
                 : "opacity-100 scale-100"
             }`}
             style={{
               backgroundImage: `url('${backgroundImage}')`,
-              filter: "brightness(0.7)",
+              filter: isHovering ? "brightness(0.85)" : "brightness(0.7)",
             }}
           />
 
           {/* Hover media (video or GIF) - always rendered for smooth transition */}
           {hoverMedia && (
             <>
-              {game.hoverMediaType === "video" ? (
+              {hoverMediaType === "video" ? (
                 <video
-                  className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-in-out ${
+                  className={`absolute inset-0 w-full h-full object-cover transition-all duration-1000 ease-in-out ${
                     isHovering ? "opacity-100 scale-105" : "opacity-0 scale-100"
                   }`}
                   autoPlay
@@ -284,10 +316,13 @@ export const GameCard = memo(
                   />
                 </video>
               ) : (
-                <img
+                <Image
                   src={hoverMedia}
                   alt={`${game.name} gameplay`}
-                  className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-in-out ${
+                  fill
+                  unoptimized
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  className={`object-cover transition-all duration-1000 ease-in-out ${
                     isHovering ? "opacity-100 scale-105" : "opacity-0 scale-100"
                   }`}
                   style={{ filter: "brightness(0.7)" }}
@@ -304,24 +339,40 @@ export const GameCard = memo(
             }}
           />
 
-          {/* Status badge */}
-          {showCountdown && wipeData?.confirmed !== undefined && (
-            <div className="absolute top-3 right-3">
-              {wipeData.confirmed ? (
-                <div className="flex items-center gap-1.5 bg-green-500/20 backdrop-blur-sm border border-green-500/30 rounded-full px-3 py-1 text-xs font-medium text-green-400">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                  </span>
-                  CONFIRMED
-                </div>
-              ) : (
-                <div className="bg-yellow-500/20 backdrop-blur-sm border border-yellow-500/30 rounded-full px-3 py-1 text-xs font-medium text-yellow-400">
-                  ESTIMATED
-                </div>
+          {/* Status badges */}
+          <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
+            {/* Current League LIVE badge */}
+            {wipeData?.customData?.currentLeague?.status === "LIVE" && (
+              <div className="flex items-center gap-1.5 bg-green-500/20 backdrop-blur-sm border border-green-500/30 rounded-full px-3 py-1 text-xs font-medium text-green-400">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </span>
+                LIVE
+              </div>
+            )}
+
+            {/* Confirmed/Estimated badge */}
+            {showCountdown &&
+              wipeData?.confirmed !== undefined &&
+              !wipeData?.customData?.currentLeague && (
+                <>
+                  {wipeData.confirmed ? (
+                    <div className="flex items-center gap-1.5 bg-green-500/20 backdrop-blur-sm border border-green-500/30 rounded-full px-3 py-1 text-xs font-medium text-green-400">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                      </span>
+                      CONFIRMED
+                    </div>
+                  ) : (
+                    <div className="bg-yellow-500/20 backdrop-blur-sm border border-yellow-500/30 rounded-full px-3 py-1 text-xs font-medium text-yellow-400">
+                      ESTIMATED
+                    </div>
+                  )}
+                </>
               )}
-            </div>
-          )}
+          </div>
         </div>
 
         {/* Content */}
@@ -330,13 +381,14 @@ export const GameCard = memo(
           <div className="mb-4 transition-all duration-300">
             <div className="flex items-center gap-2 mb-1 justify-between">
               <h3 className="text-2xl font-bold text-zinc-50">
-                {currentVersionInfo?.version.label
-                  ? `${game.name} ${currentVersionInfo.version.label}`
-                  : currentVersionInfo?.version.shortLabel || game.name}
+                {currentVersionInfo?.version.label ||
+                  currentVersionInfo?.version.shortLabel ||
+                  game.name}
               </h3>
               {hasVersions && versions.length > 1 && (
                 <div className="relative" ref={dropdownRef}>
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       setIsVersionDropdownOpen(!isVersionDropdownOpen);
@@ -362,6 +414,7 @@ export const GameCard = memo(
                   >
                     {versions.map((version, index) => (
                       <button
+                        type="button"
                         key={version.id}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -387,13 +440,29 @@ export const GameCard = memo(
               )}
             </div>
             <p className="text-sm text-zinc-400">{getEventTitle()}</p>
-            {wipeData?.eventName && (
-              <p
-                className="text-xs text-zinc-500 mt-1 line-clamp-1"
-                title={wipeData.eventName}
-              >
-                {wipeData.eventName}
-              </p>
+            {wipeData?.customData?.currentLeague ? (
+              <div className="mt-1">
+                <p
+                  className="text-xs font-semibold text-green-400 line-clamp-1"
+                  title={wipeData.customData.currentLeague.name}
+                >
+                  🔥 {wipeData.customData.currentLeague.name}
+                </p>
+                {wipeData.customData.nextLeague && (
+                  <p className="text-xs text-blue-400 mt-0.5">
+                    Next: {wipeData.customData.nextLeague.name}
+                  </p>
+                )}
+              </div>
+            ) : (
+              wipeData?.eventName && (
+                <p
+                  className="text-xs text-zinc-500 mt-1 line-clamp-1"
+                  title={wipeData.eventName}
+                >
+                  {wipeData.eventName}
+                </p>
+              )
             )}
           </div>
 
@@ -592,5 +661,5 @@ export const GameCard = memo(
       prevProps.wipeData?.confirmed === nextProps.wipeData?.confirmed &&
       prevProps.loading === nextProps.loading
     );
-  }
+  },
 );

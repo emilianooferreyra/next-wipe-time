@@ -2,68 +2,62 @@ import { games } from "@/components/game-tabs";
 import type { GameEvent } from "./types";
 
 export async function getUpcomingEvents(): Promise<GameEvent[]> {
-  const events: GameEvent[] = [];
   const now = new Date();
+  const baseUrl =
+    typeof window === "undefined"
+      ? process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
+      : "";
 
-  for (const game of games) {
-    try {
-      const baseUrl =
-        typeof window === "undefined"
-          ? process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
-          : "";
-
+  // Fetch all games in parallel — was sequential (20 × latency), now bounded by slowest single request
+  const results = await Promise.allSettled(
+    games.map(async (game): Promise<GameEvent | null> => {
       const response = await fetch(`${baseUrl}/api/wipes/${game.id}`, {
-        cache: "no-store",
+        next: { revalidate: 300 }, // Reuse Next.js cache; refresh every 5 min
       });
 
-      if (!response.ok) continue;
+      if (!response.ok) return null;
 
       const data = await response.json();
+      if (!data.nextWipe) return null;
 
-      if (data.nextWipe) {
-        const nextWipeDate = new Date(data.nextWipe);
+      const nextWipeDate = new Date(data.nextWipe);
+      if (nextWipeDate <= now) return null;
 
-        if (nextWipeDate > now) {
-          const eventType =
-            game.id === "poe"
-              ? "wipe"
-              : game.id === "diablo4"
-                ? "season"
-                : game.id === "lastepoch"
-                  ? "wipe"
-                  : "wipe";
+      const eventType =
+        game.id === "diablo4" ? "season" : "wipe";
 
-          const title =
-            game.id === "poe"
-              ? "New League"
-              : game.id === "diablo4"
+      const title =
+        game.id === "poe"
+          ? "New League"
+          : game.id === "diablo4"
+            ? "New Season"
+            : game.id === "lastepoch"
+              ? "New Cycle"
+              : game.id === "fortnite"
                 ? "New Season"
-                : game.id === "lastepoch"
-                  ? "New Cycle"
-                  : game.id === "fortnite"
-                    ? "New Season"
-                    : "Wipe";
+                : "Wipe";
 
-          events.push({
-            id: `${game.id}-next-wipe`,
-            gameId: game.id,
-            gameName: game.name,
-            title: title,
-            type: eventType,
-            startDate: nextWipeDate,
-            confirmed: data.confirmed || false,
-            description: data.announcement || data.frequency,
-            accentColor: game.accentColor,
-          });
-        }
-      }
+      return {
+        id: `${game.id}-next-wipe`,
+        gameId: game.id,
+        gameName: game.name,
+        title,
+        type: eventType,
+        startDate: nextWipeDate,
+        confirmed: data.confirmed || false,
+        description: data.announcement || data.frequency,
+        accentColor: game.accentColor,
+      } satisfies GameEvent;
+    })
+  );
 
-      // Add last wipe as historical reference (optional)
-      // This helps show cycle patterns
-    } catch (error) {
-      console.error(`Error fetching events for ${game.id}:`, error);
-    }
-  }
+  const events = results
+    .filter(
+      (r): r is PromiseFulfilledResult<GameEvent | null> =>
+        r.status === "fulfilled"
+    )
+    .map((r) => r.value)
+    .filter((e): e is GameEvent => e !== null);
 
   // Sort events by date (earliest first)
   return events.sort((a, b) => a.startDate.getTime() - b.startDate.getTime());

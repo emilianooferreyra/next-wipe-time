@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Radio, Twitch, MessageSquare, AlertCircle } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import Image from "next/image";
+import { useMemo } from "react";
+import { Radio, Twitch, MessageSquare } from "lucide-react";
 
 interface LiveStream {
   platform: "twitch" | "kick";
@@ -14,63 +16,35 @@ interface LiveStream {
   thumbnailUrl: string;
 }
 
+interface StreamsResponse {
+  twitch: LiveStream[];
+  kick: LiveStream[];
+}
+
 interface LiveStreamsProps {
   gameId: string;
 }
 
+async function fetchStreams(gameId: string): Promise<StreamsResponse> {
+  const response = await fetch(`/api/streams/live?game=${gameId}`);
+  if (!response.ok) throw new Error("Failed to fetch streams");
+  return response.json();
+}
+
 export function LiveStreams({ gameId }: LiveStreamsProps) {
-  const [streams, setStreams] = useState<{
-    twitch: LiveStream[];
-    kick: LiveStream[];
-  }>({ twitch: [], kick: [] });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [debug, setDebug] = useState<any>(null);
+  const { data, isLoading } = useQuery({
+    queryKey: ["live-streams", gameId],
+    queryFn: () => fetchStreams(gameId),
+    refetchInterval: 60_000, // replaces the manual setInterval
+    staleTime: 30_000,
+  });
 
-  useEffect(() => {
-    const fetchStreams = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await fetch(`/api/streams/live?game=${gameId}`);
-
-        if (!response.ok) throw new Error("Failed to fetch streams");
-
-        const data = await response.json();
-        console.log("Live streams response:", data);
-
-        setStreams({
-          twitch: data.twitch || [],
-          kick: data.kick || [],
-        });
-
-        if (data.debug) {
-          setDebug(data.debug);
-          if (data.debug.twitchError) {
-            console.error("Twitch Error:", data.debug.twitchError);
-          }
-        }
-      } catch (err) {
-        const errorMsg = err instanceof Error ? err.message : "Unknown error";
-        setError(errorMsg);
-        console.error("Error fetching streams:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStreams();
-    // Refresh every 60 seconds
-    const interval = setInterval(fetchStreams, 60000);
-    return () => clearInterval(interval);
-  }, [gameId]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="space-y-3">
-        {[1, 2, 3].map((i) => (
+        {["a", "b", "c"].map((k) => (
           <div
-            key={i}
+            key={k}
             className="h-20 bg-zinc-800/50 rounded-lg animate-pulse"
           />
         ))}
@@ -78,37 +52,19 @@ export function LiveStreams({ gameId }: LiveStreamsProps) {
     );
   }
 
-  const allStreams = [...streams.twitch, ...streams.kick].sort(
-    (a, b) => b.viewerCount - a.viewerCount
+  const allStreams = useMemo(
+    () =>
+      [...(data?.twitch ?? []), ...(data?.kick ?? [])].sort(
+        (a, b) => b.viewerCount - a.viewerCount,
+      ),
+    [data],
   );
 
   if (allStreams.length === 0) {
     return (
-      <div className="space-y-4">
-        <div className="text-center py-8 text-zinc-500">
-          <Radio className="w-12 h-12 mx-auto mb-2 opacity-50" />
-          <p>No streamers online right now</p>
-        </div>
-
-        {debug && (debug.twitchError || debug.kickError) && (
-          <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-lg p-4">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-yellow-600">
-                {debug.twitchError && (
-                  <p>
-                    <strong>Twitch error:</strong> {debug.twitchError}
-                  </p>
-                )}
-                {debug.kickError && (
-                  <p>
-                    <strong>Kick error:</strong> {debug.kickError}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+      <div className="text-center py-8 text-zinc-500">
+        <Radio className="w-12 h-12 mx-auto mb-2 opacity-50" />
+        <p>No streamers online right now</p>
       </div>
     );
   }
@@ -126,10 +82,12 @@ export function LiveStreams({ gameId }: LiveStreamsProps) {
           <div className="flex gap-3 p-3">
             {stream.thumbnailUrl && (
               <div className="relative w-24 h-16 bg-zinc-700 rounded flex-shrink-0">
-                <img
+                <Image
                   src={stream.thumbnailUrl}
                   alt={stream.streamerDisplayName}
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="96px"
+                  className="object-cover rounded"
                 />
                 <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-all">
                   <div className="flex items-center gap-1 text-red-500 text-xs font-bold">

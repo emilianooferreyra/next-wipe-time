@@ -1,10 +1,10 @@
 import { chromium } from "playwright";
-import type { Browser, BrowserContext, Page } from "playwright";
+import type { Browser, Page } from "playwright";
 
+// Browser singleton — launching is expensive, sharing the process is fine.
+// Contexts (one per request) provide the actual isolation between requests.
 let browser: Browser | null = null;
-let context: BrowserContext | null = null;
 
-// User agents pool for rotation
 const USER_AGENTS = [
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
@@ -17,7 +17,7 @@ function getRandomUserAgent(): string {
   return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
 }
 
-export async function getBrowser() {
+export async function getBrowser(): Promise<Browser> {
   if (browser && browser.isConnected()) {
     return browser;
   }
@@ -36,19 +36,30 @@ export async function getBrowser() {
     ],
   });
 
-  console.log("✅ Browser launched with stealth mode");
   return browser;
 }
 
-export async function getContext() {
+export async function closeBrowser(): Promise<void> {
+  if (browser) {
+    await browser.close();
+    browser = null;
+  }
+}
+
+/**
+ * Creates an isolated browser context per call and returns a new page.
+ *
+ * Each request gets its own context — preventing concurrent requests from
+ * blocking or leaking state into each other.
+ *
+ * Callers must close the page when done (`page.close()`).
+ * Closing the page automatically closes its context via the "close" event.
+ */
+export async function newPage(): Promise<Page> {
   const browserInstance = await getBrowser();
 
-  if (context) {
-    return context;
-  }
-
-  // Create context with random user agent and additional anti-detection
-  context = await browserInstance.newContext({
+  // Fresh context per request: isolated cookies, storage, and user agent
+  const ctx = await browserInstance.newContext({
     userAgent: getRandomUserAgent(),
     viewport: { width: 1920, height: 1080 },
     locale: "en-US",
@@ -62,57 +73,24 @@ export async function getContext() {
     },
   });
 
-  // Additional anti-detection: Override navigator properties
-  await context.addInitScript(() => {
-    // Override the navigator.webdriver property
-    Object.defineProperty(navigator, "webdriver", {
-      get: () => false,
-    });
+  await ctx.addInitScript(() => {
+    Object.defineProperty(navigator, "webdriver", { get: () => false });
+    Object.defineProperty(navigator, "plugins", { get: () => [1, 2, 3, 4, 5] });
+    Object.defineProperty(navigator, "languages", { get: () => ["en-US", "en"] });
 
-    // Override the plugins property
-    Object.defineProperty(navigator, "plugins", {
-      get: () => [1, 2, 3, 4, 5],
-    });
+    (window as any).chrome = { runtime: {} };
 
-    // Override the languages property
-    Object.defineProperty(navigator, "languages", {
-      get: () => ["en-US", "en"],
-    });
-
-    // Add chrome object
-    (window as any).chrome = {
-      runtime: {},
-    };
-
-    // Override permissions
     const originalQuery = window.navigator.permissions.query;
     window.navigator.permissions.query = (parameters: any) =>
       parameters.name === "notifications"
-        ? Promise.resolve({
-            state: Notification.permission,
-          } as PermissionStatus)
+        ? Promise.resolve({ state: Notification.permission } as PermissionStatus)
         : originalQuery(parameters);
   });
 
-  console.log("✅ Browser context created with anti-detection");
-  return context;
-}
-
-export async function closeBrowser() {
-  if (context) {
-    await context.close();
-    context = null;
-  }
-  if (browser) {
-    await browser.close();
-    browser = null;
-  }
-  console.log("🔒 Browser closed");
-}
-
-// Helper function to create a new page with anti-detection
-export async function newPage(): Promise<Page> {
-  const ctx = await getContext();
   const page = await ctx.newPage();
+
+  // When the caller closes the page, clean up the context automatically
+  page.on("close", () => ctx.close().catch(() => {}));
+
   return page;
 }

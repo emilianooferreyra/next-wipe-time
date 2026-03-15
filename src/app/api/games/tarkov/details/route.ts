@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
-import { scrapeTarkovWipeFromReddit } from "@/lib/scrapers/tarkov-reddit";
-import { scrapeTarkovOfficial } from "@/lib/scrapers/tarkov-official";
-import { scrapeTwitchLiveStreams } from "@/lib/scrapers/twitch-scraper";
+import { gameScraperMap } from "@/lib/scrapers/configs";
 import { scrapeKickLiveStreams } from "@/lib/scrapers/kick-scraper";
-import { scrapeYouTubeVideos, scrapeTarkovOfficialVideos } from "@/lib/scrapers/youtube-scraper";
+import { scrapeTwitchLiveStreams } from "@/lib/scrapers/twitch-scraper";
+import {
+  scrapeTarkovOfficialVideos,
+  scrapeYouTubeVideos,
+} from "@/lib/scrapers/youtube-scraper";
 import { getStreamersForGame } from "@/lib/streamers";
 import type { WipeData } from "@/schemas/wipe-data";
 
@@ -22,14 +24,8 @@ export async function GET() {
   try {
     console.log("🎮 Fetching Tarkov detailed information...");
 
-    // Get wipe information from both sources
-    const [redditWipeData, officialWipeData] = await Promise.all([
-      scrapeTarkovWipeFromReddit(),
-      scrapeTarkovOfficial(),
-    ]);
-
-    // Prefer official source if available
-    const wipeData = officialWipeData || redditWipeData;
+    // Get wipe information from gameScraperMap
+    const wipeData = await gameScraperMap.scrape("tarkov");
 
     // Get streamers for Tarkov
     const streamers = getStreamersForGame("tarkov");
@@ -37,8 +33,12 @@ export async function GET() {
 
     // Get live streams in parallel
     const [twitchStreams, kickStreams] = await Promise.all([
-      streamerUsernames.length > 0 ? scrapeTwitchLiveStreams(streamerUsernames) : Promise.resolve([]),
-      streamerUsernames.length > 0 ? scrapeKickLiveStreams(streamerUsernames) : Promise.resolve([]),
+      streamerUsernames.length > 0
+        ? scrapeTwitchLiveStreams(streamerUsernames)
+        : Promise.resolve([]),
+      streamerUsernames.length > 0
+        ? scrapeKickLiveStreams(streamerUsernames)
+        : Promise.resolve([]),
     ]);
 
     // Get videos (both official and general Tarkov videos)
@@ -76,7 +76,7 @@ export async function GET() {
         videos: [],
         timestamp: new Date().toISOString(),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

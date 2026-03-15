@@ -1,128 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
-import { EventCalendar } from "@/components/event-calendar";
-import type { GameEvent } from "@/lib/events/types";
 import { CalendarCheck } from "lucide-react";
+import { useWipeEvents } from "@/hooks/use-wipe-events";
+import { EventCalendar } from "@/components/event-calendar";
 
 export default function CalendarPage() {
-  const [events, setEvents] = useState<GameEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const loadEvents = async () => {
-      try {
-        setLoading(true);
-
-        const games = [
-          "rust",
-          "tarkov",
-          "poe",
-          "fortnite",
-          "diablo4",
-          "lastepoch",
-        ];
-        const eventPromises = games.map(async (gameId) => {
-          try {
-            const response = await fetch(`/api/wipes/${gameId}`);
-            if (!response.ok) return null;
-            return await response.json();
-          } catch {
-            return null;
-          }
-        });
-
-        const results = await Promise.all(eventPromises);
-        const allEvents: GameEvent[] = [];
-        const now = new Date();
-
-        // Convert wipe data to events
-        for (let i = 0; i < games.length; i++) {
-          const data = results[i];
-          const gameId = games[i];
-
-          if (data && data.nextWipe) {
-            const nextWipeDate = new Date(data.nextWipe);
-
-            if (nextWipeDate > now) {
-              const gameName =
-                gameId === "rust"
-                  ? "Rust"
-                  : gameId === "tarkov"
-                    ? "Escape from Tarkov"
-                    : gameId === "poe"
-                      ? "Path of Exile"
-                      : gameId === "fortnite"
-                        ? "Fortnite"
-                        : gameId === "diablo4"
-                          ? "Diablo 4"
-                          : gameId === "lastepoch"
-                            ? "Last Epoch"
-                            : gameId;
-
-              const title =
-                gameId === "poe"
-                  ? "New League"
-                  : gameId === "diablo4"
-                    ? "New Season"
-                    : gameId === "lastepoch"
-                      ? "New Cycle"
-                      : gameId === "fortnite"
-                        ? "New Season"
-                        : "Wipe";
-
-              const eventType =
-                gameId === "poe"
-                  ? "wipe"
-                  : gameId === "diablo4"
-                    ? "season"
-                    : gameId === "lastepoch"
-                      ? "wipe"
-                      : "wipe";
-
-              const accentColor =
-                gameId === "rust"
-                  ? "rgb(206, 62, 62)"
-                  : gameId === "tarkov"
-                    ? "rgb(205, 180, 128)"
-                    : gameId === "poe"
-                      ? "rgb(175, 96, 37)"
-                      : gameId === "fortnite"
-                        ? "rgb(0, 180, 216)"
-                        : gameId === "diablo4"
-                          ? "rgb(139, 0, 0)"
-                          : gameId === "lastepoch"
-                            ? "rgb(138, 43, 226)"
-                            : "rgb(255, 255, 255)";
-
-              allEvents.push({
-                id: `${gameId}-next-wipe`,
-                gameId,
-                gameName,
-                title,
-                type: eventType,
-                startDate: nextWipeDate,
-                confirmed: data.confirmed || false,
-                description: data.announcement || data.frequency,
-                accentColor,
-              });
-            }
-          }
-        }
-
-        // Sort by date
-        allEvents.sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
-        setEvents(allEvents);
-      } catch (error) {
-        console.error("Error loading events:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadEvents();
-  }, []);
+  const { data: events = [], isLoading } = useWipeEvents();
 
   return (
     <div className="relative min-h-screen font-sans bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
@@ -161,7 +45,7 @@ export default function CalendarPage() {
           </p>
         </div>
 
-        {loading ? (
+        {isLoading ? (
           <div className="text-center py-12">
             <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent motion-reduce:animate-[spin_1.5s_linear_infinite]" />
             <p className="mt-4 text-sm text-zinc-400">Loading events...</p>
@@ -212,9 +96,7 @@ export default function CalendarPage() {
                     <div
                       key={event.id}
                       className="rounded-lg border border-zinc-700/50 bg-zinc-800/30 backdrop-blur-sm p-6 hover:bg-zinc-700/20 transition-colors"
-                      style={{
-                        borderLeft: `4px solid ${event.accentColor}`,
-                      }}
+                      style={{ borderLeft: `4px solid ${event.accentColor}` }}
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
@@ -225,12 +107,11 @@ export default function CalendarPage() {
                             >
                               {event.gameName}
                             </span>
-                            {event.confirmed && (
+                            {event.confirmed ? (
                               <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 font-medium">
                                 <CalendarCheck />
                               </span>
-                            )}
-                            {!event.confirmed && (
+                            ) : (
                               <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-full font-medium">
                                 Estimated
                               </span>

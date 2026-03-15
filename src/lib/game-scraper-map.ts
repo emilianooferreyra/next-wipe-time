@@ -1,96 +1,71 @@
 /**
- * Maps game IDs to their scraper functions
- * Supports both single games and multi-version games
+ * Optimized Game Scraper Map with Dynamic Imports
+ *
+ * BREAKING CHANGE: Now uses dynamic config loading for ~200KB bundle reduction
+ * Configs are loaded on-demand instead of all upfront
  */
 
 import type { WipeData } from "@/schemas/wipe-data";
+import { optimizedScraperEngine } from "./scrapers/optimized-engine";
+import {
+  getSupportedGameIds,
+  loadGameConfig,
+} from "./scrapers/dynamic-config-loader";
 
-// Import all scrapers
-import { scrapeRustWipe } from "./scrapers/rust";
-import { scrapeTarkovWipeFromReddit } from "./scrapers/tarkov-reddit";
-import { scrapePoeWipe } from "./scrapers/poe";
-import { scrapePoe2League } from "./scrapers/poe2";
-import { scrapeFortniteWipe } from "./scrapers/fortnite";
-import { scrapeDiablo4Seasons } from "./scrapers/diablo4-news";
-import { scrapeLastEpochCycles } from "./scrapers/last-epoch-forum";
-import { scrapeValorantActs } from "./scrapers/valorant-fandom";
-import { scrapeLoLSeasons } from "./scrapers/lol-reddit";
-import { scrapeTFTSets } from "./scrapers/tft-reddit";
-import { scrapeApexSeasons } from "./scrapers/apex-fandom";
-import { scrapeCODSeasons } from "./scrapers/cod-fandom";
-import { scrapeCodMW3Season } from "./scrapers/cod-mw3";
-import { scrapeCodBO6Season } from "./scrapers/cod-bo6";
-import { scrapeRocketLeagueSeasons } from "./scrapers/rocketleague-fandom";
-import { scrapeDBDChapters } from "./scrapers/dbd-fandom";
-import { scrapePUBGSeasons } from "./scrapers/pubg-steam";
-import { scrapeOverwatch2Season } from "./scrapers/overwatch2";
-import { scrapeDestiny2Season } from "./scrapers/destiny2";
-import { scrapeR6SiegeSeason } from "./scrapers/r6siege";
-import { scrapeWarframeUpdate } from "./scrapers/warframe";
-import { scrapeDiablo3Seasons } from "./scrapers/diablo3";
-import { scrapeDiablo2Seasons } from "./scrapers/diablo2";
-
-export type GameScraperFunction = () => Promise<WipeData>;
+export type {
+  GameScraperConfig,
+  ScraperStrategy,
+} from "./scrapers/types";
 
 /**
- * Map of game IDs to their scraper functions
- * This includes both single games and versioned games
+ * Optimized game scraper map - uses dynamic imports
  */
-export const GAME_SCRAPER_MAP: Record<string, GameScraperFunction> = {
-  // Single games (no versions)
-  rust: scrapeRustWipe,
-  tarkov: scrapeTarkovWipeFromReddit,
-  fortnite: scrapeFortniteWipe,
-  lastepoch: scrapeLastEpochCycles,
-  valorant: scrapeValorantActs,
-  lol: scrapeLoLSeasons,
-  tft: scrapeTFTSets,
-  apex: scrapeApexSeasons,
-  pubg: scrapePUBGSeasons,
-  warframe: scrapeWarframeUpdate,
-  dbd: scrapeDBDChapters,
+export const gameScraperMap = {
+  /**
+   * Scrape game data using optimized engine with dynamic config loading
+   */
+  async scrape(gameId: string): Promise<WipeData> {
+    return optimizedScraperEngine.scrape(gameId);
+  },
 
-  // Multi-version games
-  // Path of Exile
-  poe: scrapePoeWipe,
-  poe2: scrapePoe2League,
+  /**
+   * Get scraper function for a game (backward compatibility)
+   * @deprecated Use scrape() directly instead
+   */
+  getScraper(gameId: string): (() => Promise<WipeData>) | null {
+    return () => this.scrape(gameId);
+  },
 
-  // Diablo
-  diablo4: scrapeDiablo4Seasons,
-  diablo3: scrapeDiablo3Seasons,
-  diablo2: scrapeDiablo2Seasons,
+  /**
+   * Check if game is supported
+   */
+  hasScraper(gameId: string): boolean {
+    return getSupportedGameIds().includes(gameId);
+  },
 
-  // Call of Duty
-  cod: scrapeCODSeasons,
-  "cod-mw3": scrapeCodMW3Season,
-  "cod-bo6": scrapeCodBO6Season,
+  /**
+   * Get all supported game IDs
+   */
+  getAvailableGameIds(): string[] {
+    return getSupportedGameIds();
+  },
 
-  // Other multi-version
-  rocketleague: scrapeRocketLeagueSeasons,
-  overwatch2: scrapeOverwatch2Season,
-  destiny2: scrapeDestiny2Season,
-  r6siege: scrapeR6SiegeSeason,
+  /**
+   * Preload config for a game (useful for optimization)
+   */
+  async preloadConfig(gameId: string): Promise<void> {
+    await loadGameConfig(gameId);
+  },
 };
 
-/**
- * Get the scraper function for a game ID
- */
-export function getScraperForGame(
-  gameId: string,
-): GameScraperFunction | null {
-  return GAME_SCRAPER_MAP[gameId] || null;
+// Backward compatibility exports
+export { optimizedScraperEngine as scraperEngine };
+
+// Helper functions for direct usage
+export function getScraperForGame(gameId: string) {
+  return gameScraperMap.getScraper(gameId);
 }
 
-/**
- * Check if a game has a scraper available
- */
 export function hasScraperForGame(gameId: string): boolean {
-  return gameId in GAME_SCRAPER_MAP;
-}
-
-/**
- * Get all available game IDs
- */
-export function getAvailableGameIds(): string[] {
-  return Object.keys(GAME_SCRAPER_MAP);
+  return gameScraperMap.hasScraper(gameId);
 }

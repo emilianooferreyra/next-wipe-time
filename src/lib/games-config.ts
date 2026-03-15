@@ -8,6 +8,8 @@ export type GameVersion = {
   label: string; // display name (e.g., "Diablo IV")
   shortLabel?: string; // short version (e.g., "IV")
   image?: string; // optional separate image for version (falls back to parent game image)
+  hoverMedia?: string; // optional separate hover media for version
+  hoverMediaType?: "video" | "gif"; // type of hover media
 };
 
 export type GameConfig = {
@@ -15,6 +17,7 @@ export type GameConfig = {
   name: string; // display name
   accentColor: string;
   backgroundImage: string;
+  coverImage?: string; // static cover image for games without versions (card display)
   hoverMedia?: string;
   hoverMediaType?: "video" | "gif";
   versions: GameVersion[];
@@ -26,27 +29,50 @@ export const GAMES_WITH_VERSIONS: Record<string, GameConfig> = {
     parentId: "diablo",
     name: "Diablo",
     accentColor: "rgb(139, 0, 0)",
-    backgroundImage: "/images/games/diablo4.jpg",
+    backgroundImage:
+      "https://bnetcmsus-a.akamaihd.net/cms/blog_header/x4/X499874868Z61727473723366.jpg",
     hoverMedia: "/videos/games/diablo4.mp4",
     hoverMediaType: "video",
     versions: [
       {
         id: "diablo4",
-        label: "",
-        shortLabel: "Diablo IV",
-        image: "/images/games/diablo4.jpg",
+        label: "Diablo IV",
+        shortLabel: "IV",
+        image:
+          "https://bnetcmsus-a.akamaihd.net/cms/blog_header/x4/X499874868Z61727473723366.jpg",
+        hoverMedia:
+          "https://blz-contentstack-assets.akamaized.net/v3/assets/blta8f9a8e092360c6c/blt2097ffa7eac71a03/66c7887754ac148308dfa7a5/card_diablo_iv_hover.webm",
+        hoverMediaType: "video",
       },
       {
         id: "diablo3",
-        label: "",
-        shortLabel: "Diablo III",
-        // Uses fallback to parent game image
+        label: "Diablo III",
+        shortLabel: "III",
+        image:
+          "https://blz-contentstack-images.akamaized.net/v3/assets/blta8f9a8e092360c6c/blt1315e30958e75426/61a50f460df21d7804454d88/diablo3.jpg?format=webply&quality=80&auto=webp",
+        hoverMedia:
+          "https://blz-contentstack-assets.akamaized.net/v3/assets/blta8f9a8e092360c6c/blt96fa5091bd3b0835/66c78900fd942465b0e5308c/card_diablo_iii_hover.webm",
+        hoverMediaType: "video",
       },
       {
         id: "diablo2",
-        label: "",
-        shortLabel: "Diablo II: Resurrected",
-        // Uses fallback to parent game image
+        label: "Diablo II: Resurrected",
+        shortLabel: "II",
+        image:
+          "https://blz-contentstack-images.akamaized.net/v3/assets/blta8f9a8e092360c6c/blt0076b0be3961b1c7/620c26b504503350d255b8dc/diablo2.jpg?format=webply&quality=80&auto=webp",
+        hoverMedia:
+          "https://blz-contentstack-assets.akamaized.net/v3/assets/blta8f9a8e092360c6c/blta6961fb10293cc01/66c788e0af5f733b7f928ad8/card_diablo_ii_resurrected_hover.webm",
+        hoverMediaType: "video",
+      },
+      {
+        id: "diabloimmortal",
+        label: "Diablo Immortal",
+        shortLabel: "Immortal",
+        image:
+          "https://blz-contentstack-images.akamaized.net/v3/assets/blta8f9a8e092360c6c/blt14732d868dcaaebd/6287cff46eb6de7d054a58c8/diablo-immortal.jpg?format=webply&quality=80&auto=webp",
+        hoverMedia:
+          "https://blz-contentstack-assets.akamaized.net/v3/assets/blta8f9a8e092360c6c/blt13c57a92702efa85/68cdaf37a4aa228ad7f9eab8/DIM_QuartFeat_13_DsktpApp_600x800.webm",
+        hoverMediaType: "video",
       },
     ],
     defaultVersionId: "diablo4",
@@ -56,57 +82,266 @@ export const GAMES_WITH_VERSIONS: Record<string, GameConfig> = {
     parentId: "poe",
     name: "Path of Exile",
     accentColor: "rgb(175, 96, 37)",
-    backgroundImage: "/images/games/poe.jpg",
+    backgroundImage:
+      "https://web.poecdn.com/public/news/2024-07-18/SettlersOfKalguurHeader.jpg",
     hoverMedia: "/videos/games/poe.webm",
     hoverMediaType: "video",
     versions: [
       {
         id: "poe",
-        label: "",
-        shortLabel: "Path of Exile",
-        image: "/images/games/poe.jpg",
+        label: "Path of Exile",
+        shortLabel: "PoE 1",
+        image:
+          "https://web.poecdn.com/public/news/2024-07-18/SettlersOfKalguurHeader.jpg",
       },
       {
         id: "poe2",
-        label: "",
-        shortLabel: "Path of Exile 2",
-        image: "/images/games/poe2.jpg",
+        label: "Path of Exile 2",
+        shortLabel: "PoE 2",
+        image:
+          "https://web.poecdn.com/image/poe2/promo/FateoftheVaal/PoE2_FotV_BG_1920x1080.jpg",
+        hoverMedia:
+          "https://web.poecdn.com/video/poe2/FateoftheVaal/FotV_Transition.webm",
+        hoverMediaType: "video",
       },
     ],
-    defaultVersionId: "poe",
+    defaultVersionId: "poe2",
   },
 
   cod: {
     parentId: "cod",
     name: "Call of Duty",
     accentColor: "rgb(0, 255, 0)",
-    backgroundImage: "/images/games/cod.jpg",
+    backgroundImage:
+      "https://www.callofduty.com/content/dam/atvi/callofduty/cod-touchui/blackops6/meta/bo6-meta-share.jpg",
     hoverMedia: "/videos/games/cod.gif",
     hoverMediaType: "gif",
     versions: [
       {
-        id: "cod",
-        label: "",
-        shortLabel: "Warzone",
-        image: "/images/games/cod.jpg",
+        id: "cod-bo6",
+        label: "Black Ops 6",
+        shortLabel: "BO6",
+        image:
+          "https://www.callofduty.com/content/dam/atvi/callofduty/cod-touchui/blackops6/meta/bo6-meta-share.jpg",
       },
       {
         id: "cod-mw3",
         label: "Modern Warfare III",
         shortLabel: "MW3",
-        // Uses fallback to parent game image
+        image:
+          "https://www.callofduty.com/content/dam/atvi/callofduty/cod-touchui/mw3/meta/mw3-meta-share.jpg",
       },
       {
-        id: "cod-bo6",
-        label: "Black Ops 6",
-        shortLabel: "BO6",
-        // Uses fallback to parent game image
+        id: "cod",
+        label: "Warzone",
+        shortLabel: "Warzone",
+        image:
+          "https://www.callofduty.com/content/dam/atvi/callofduty/cod-touchui/warzone/meta/warzone-meta-share.jpg",
       },
     ],
-    defaultVersionId: "cod",
+    defaultVersionId: "cod-bo6",
+  },
+
+  tarkov: {
+    parentId: "tarkov",
+    name: "Escape from Tarkov",
+    accentColor: "rgb(158, 136, 85)",
+    backgroundImage: "https://assets.tarkov.com/news/15/banner_15_0.jpg",
+    hoverMedia: "/videos/games/tarkov.mp4",
+    hoverMediaType: "video",
+    versions: [
+      {
+        id: "tarkov",
+        label: "Escape from Tarkov",
+        shortLabel: "Tarkov",
+        image: "https://assets.tarkov.com/news/15/banner_15_0.jpg",
+      },
+      {
+        id: "tarkov-arena",
+        label: "Arena",
+        shortLabel: "Arena",
+        image: "https://assets.tarkov.com/news/arena/arena_banner.jpg",
+      },
+    ],
+    defaultVersionId: "tarkov",
+  },
+
+  rust: {
+    parentId: "rust",
+    name: "Rust",
+    accentColor: "rgb(206, 66, 43)",
+    backgroundImage: "https://files.facepunch.com/rust/blog/header_2024_10.jpg",
+    coverImage:
+      "https://cdn.cloudflare.steamstatic.com/steam/apps/252490/header.jpg?t=1708706822",
+    hoverMedia: "/videos/games/rust.mp4",
+    hoverMediaType: "video",
+    versions: [],
+    defaultVersionId: "rust",
+  },
+
+  fortnite: {
+    parentId: "fortnite",
+    name: "Fortnite",
+    accentColor: "rgb(29, 78, 216)",
+    backgroundImage:
+      "https://cdn2.unrealengine.com/fortnite-chapter-5-season-4-header-1920x1080-6927d7802163.jpg",
+    coverImage:
+      "https://cdn2.unrealengine.com/fortnite-battle-royale-1920x1080-0c1e6f8c9a9e.jpg",
+    hoverMedia: "/videos/games/fortnite.mp4",
+    hoverMediaType: "video",
+    versions: [],
+    defaultVersionId: "fortnite",
+  },
+
+  valorant: {
+    parentId: "valorant",
+    name: "Valorant",
+    accentColor: "rgb(255, 70, 85)",
+    backgroundImage:
+      "https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blt7275cf5188820a4b/66eb12228514934a493a7d25/VAL_EP9_AII_Teaser_Article_Banner.jpg",
+    coverImage:
+      "https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/bltc555a5f51184f06b/6494777f84b3ee51f47fdbe7/Valorant_Article_Banner_1920x1080.jpg",
+    hoverMedia: "/videos/games/valorant.mp4",
+    hoverMediaType: "video",
+    versions: [],
+    defaultVersionId: "valorant",
+  },
+
+  lol: {
+    parentId: "lol",
+    name: "League of Legends",
+    accentColor: "rgb(201, 156, 75)",
+    backgroundImage:
+      "https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Ahri_0.jpg",
+    coverImage:
+      "https://cdn1.epicgames.com/offer/24b9b5e658bc4a0f88c24e9cbe476bb2/EGS_LeagueofLegends_RiotGames_S1_2560x1440-8f7d8f019d7b7b6f0c9c9c9c9c9c9c9c_2560x1440-8f7d8f019d7b7b6f0c9c9c9c9c9c9c9c",
+    hoverMedia: "/videos/games/lol.mp4",
+    hoverMediaType: "video",
+    versions: [],
+    defaultVersionId: "lol",
+  },
+
+
+  tft: {
+    parentId: "tft",
+    name: "Teamfight Tactics",
+    accentColor: "rgb(201, 156, 75)",
+    backgroundImage: "https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Sett_0.jpg",
+    coverImage: "https://cdn1.epicgames.com/salesEvent/salesEvent/EGS_TeamfightTactics_RiotGames_S1_2560x1440-2560x1440-8f7d8f019d7b7b6f0c9c9c9c9c9c9c9c",
+    hoverMedia: "/videos/games/tft.mp4",
+    hoverMediaType: "video",
+    versions: [],
+    defaultVersionId: "tft",
+  },
+
+  apex: {
+    parentId: "apex",
+    name: "Apex Legends",
+    accentColor: "rgb(255, 69, 0)",
+    backgroundImage: "https://media.contentapi.ea.com/content/dam/apex-legends/images/2023/05/apex-resurrection-keyart-16x9.jpg.adapt.1456w.jpg",
+    coverImage: "https://cdn1.epicgames.com/offer/50401f2a5a4d4f17ad8d1b096177ac45/EGS_ApexLegends_RespawnEntertainment_S1_2560x1440-2560x1440-8f7d8f019d7b7b6f0c9c9c9c9c9c9c9c",
+    hoverMedia: "/videos/games/apex.mp4",
+    hoverMediaType: "video",
+    versions: [],
+    defaultVersionId: "apex",
+  },
+
+  pubg: {
+    parentId: "pubg",
+    name: "PUBG",
+    accentColor: "rgb(255, 165, 0)",
+    backgroundImage: "https://cdn.akamai.steamstatic.com/steam/apps/578080/header.jpg?t=1708706822",
+    coverImage: "https://cdn.akamai.steamstatic.com/steam/apps/578080/header.jpg?t=1708706822",
+    hoverMedia: "/videos/games/pubg.mp4",
+    hoverMediaType: "video",
+    versions: [],
+    defaultVersionId: "pubg",
+  },
+
+  warframe: {
+    parentId: "warframe",
+    name: "Warframe",
+    accentColor: "rgb(255, 215, 0)",
+    backgroundImage: "https://cdn.akamai.steamstatic.com/steam/apps/230410/header.jpg?t=1708706822",
+    coverImage: "https://cdn.akamai.steamstatic.com/steam/apps/230410/header.jpg?t=1708706822",
+    hoverMedia: "/videos/games/warframe.mp4",
+    hoverMediaType: "video",
+    versions: [],
+    defaultVersionId: "warframe",
+  },
+
+  dbd: {
+    parentId: "dbd",
+    name: "Dead by Daylight",
+    accentColor: "rgb(139, 0, 0)",
+    backgroundImage: "https://cdn.akamai.steamstatic.com/steam/apps/381210/header.jpg?t=1708706822",
+    coverImage: "https://cdn.akamai.steamstatic.com/steam/apps/381210/header.jpg?t=1708706822",
+    hoverMedia: "/videos/games/dbd.mp4",
+    hoverMediaType: "video",
+    versions: [],
+    defaultVersionId: "dbd",
+  },
+
+  rocketleague: {
+    parentId: "rocketleague",
+    name: "Rocket League",
+    accentColor: "rgb(0, 100, 255)",
+    backgroundImage: "https://cdn.akamai.steamstatic.com/steam/apps/252950/header.jpg?t=1708706822",
+    coverImage: "https://cdn.akamai.steamstatic.com/steam/apps/252950/header.jpg?t=1708706822",
+    hoverMedia: "/videos/games/rocketleague.mp4",
+    hoverMediaType: "video",
+    versions: [],
+    defaultVersionId: "rocketleague",
+  },
+
+  overwatch2: {
+    parentId: "overwatch2",
+    name: "Overwatch 2",
+    accentColor: "rgb(255, 140, 0)",
+    backgroundImage: "https://blz-contentstack-assets.akamaized.net/v3/assets/blta8f9a8e092360c6c/blt66c62e7c529b0d95/634064d2a5e11b7cf6beb7a0/ow2-keyart.jpg",
+    coverImage: "https://blz-contentstack-assets.akamaized.net/v3/assets/blta8f9a8e092360c6c/blt66c62e7c529b0d95/634064d2a5e11b7cf6beb7a0/ow2-keyart.jpg",
+    hoverMedia: "/videos/games/overwatch2.mp4",
+    hoverMediaType: "video",
+    versions: [],
+    defaultVersionId: "overwatch2",
+  },
+
+  destiny2: {
+    parentId: "destiny2",
+    name: "Destiny 2",
+    accentColor: "rgb(255, 215, 0)",
+    backgroundImage: "https://cdn.akamai.steamstatic.com/steam/apps/1085660/header.jpg?t=1708706822",
+    coverImage: "https://cdn.akamai.steamstatic.com/steam/apps/1085660/header.jpg?t=1708706822",
+    hoverMedia: "/videos/games/destiny2.mp4",
+    hoverMediaType: "video",
+    versions: [],
+    defaultVersionId: "destiny2",
+  },
+
+  r6siege: {
+    parentId: "r6siege",
+    name: "Rainbow Six Siege",
+    accentColor: "rgb(255, 69, 0)",
+    backgroundImage: "https://cdn.akamai.steamstatic.com/steam/apps/359550/header.jpg?t=1708706822",
+    coverImage: "https://cdn.akamai.steamstatic.com/steam/apps/359550/header.jpg?t=1708706822",
+    hoverMedia: "/videos/games/r6siege.mp4",
+    hoverMediaType: "video",
+    versions: [],
+    defaultVersionId: "r6siege",
+  },
+
+  lastepoch: {
+    parentId: "lastepoch",
+    name: "Last Epoch",
+    accentColor: "rgb(128, 0, 128)",
+    backgroundImage: "https://cdn.akamai.steamstatic.com/steam/apps/899770/header.jpg?t=1708706822",
+    coverImage: "https://cdn.akamai.steamstatic.com/steam/apps/899770/header.jpg?t=1708706822",
+    hoverMedia: "/videos/games/lastepoch.mp4",
+    hoverMediaType: "video",
+    versions: [],
+    defaultVersionId: "lastepoch",
   },
 };
-
 /**
  * Get game config by parent ID
  */
@@ -118,7 +353,7 @@ export function getGameConfig(parentId: string): GameConfig | null {
  * Get version by ID (e.g., "diablo-iv")
  */
 export function getGameVersion(
-  gameId: string
+  gameId: string,
 ): { config: GameConfig; version: GameVersion } | null {
   // Find which parent game this belongs to
   for (const [, config] of Object.entries(GAMES_WITH_VERSIONS)) {
@@ -192,4 +427,35 @@ export function getBaseGameIdForVersion(versionId: string): string {
     }
   }
   return versionId;
+}
+
+/**
+ * Get cover image for a game (works for both single games and versions)
+ * Returns coverImage for games without versions, or version.image for games with versions
+ */
+export function getGameCoverImage(gameId: string): string | null {
+  const config = GAMES_WITH_VERSIONS[gameId];
+
+  // If it's a parent game with no versions, return its coverImage
+  if (config && config.versions.length === 0) {
+    return config.coverImage || config.backgroundImage || null;
+  }
+
+  // If it's a parent game with versions, return the default version's image
+  if (config && config.versions.length > 0) {
+    const defaultVersion = config.versions.find(
+      (v) => v.id === config.defaultVersionId,
+    );
+    return defaultVersion?.image || config.backgroundImage || null;
+  }
+
+  // If it's a version ID, find it in the configs
+  for (const [, gameConfig] of Object.entries(GAMES_WITH_VERSIONS)) {
+    const version = gameConfig.versions.find((v) => v.id === gameId);
+    if (version) {
+      return version.image || gameConfig.backgroundImage || null;
+    }
+  }
+
+  return null;
 }

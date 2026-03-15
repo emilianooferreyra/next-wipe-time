@@ -1,18 +1,38 @@
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
-  // Verify cron secret to prevent unauthorized access
-  const authHeader = request.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET || "dev-secret";
+  // --- Secret validation ---
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    // Fail closed: if the secret is not configured, refuse all requests
+    console.error("[cron] CRON_SECRET env var is not set — refusing request");
+    return NextResponse.json({ error: "Server misconfiguration" }, { status: 500 });
+  }
 
+  const authHeader = request.headers.get("authorization");
   if (authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  // --- Base URL validation (prevent SSRF) ---
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+  if (!baseUrl) {
+    console.error("[cron] NEXT_PUBLIC_BASE_URL env var is not set");
+    return NextResponse.json({ error: "Server misconfiguration" }, { status: 500 });
+  }
 
-    // Trigger refresh for all games
+  try {
+    const parsed = new URL(baseUrl);
+    if (parsed.protocol !== "https:") {
+      throw new Error("Only HTTPS base URLs are permitted");
+    }
+  } catch {
+    console.error("[cron] Invalid NEXT_PUBLIC_BASE_URL:", baseUrl);
+    return NextResponse.json({ error: "Server misconfiguration" }, { status: 500 });
+  }
+
+  // --- Run wipe refresh ---
+  try {
     const games = [
       "rust",
       "tarkov",
@@ -50,7 +70,7 @@ export async function GET(request: Request) {
       status: result.status,
       ...(result.status === "fulfilled"
         ? { data: result.value }
-        : { error: result.reason }),
+        : { error: "Fetch failed" }), // Don't leak internal error details
     }));
 
     return NextResponse.json({
@@ -60,9 +80,10 @@ export async function GET(request: Request) {
       results: summary,
     });
   } catch (error) {
-    console.error("Cron job error:", error);
+    // Log full error server-side, return generic message to client
+    console.error("[cron] Job failed:", error);
     return NextResponse.json(
-      { error: "Failed to update wipe data", details: String(error) },
+      { error: "Failed to update wipe data" },
       { status: 500 },
     );
   }
